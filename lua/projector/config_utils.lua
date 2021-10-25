@@ -21,8 +21,8 @@ function M.load_dap_configurations()
 end
 
 
-function M.load_project_configs(path)
-  local resolved_path = path or (vim.fn.getcwd() .. '/.vscode/launch.json')
+function M.load_project_configurations(path)
+  local resolved_path = path or (vim.fn.getcwd() .. '/.vim/projector.json')
 
   if not vim.loop.fs_stat(resolved_path) then
     return
