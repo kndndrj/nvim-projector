@@ -49,10 +49,10 @@ local function select_config(opts, filters)
         local make_display = function(tbl)
           local v = tbl.value
           return displayer {
-            { icon_map[v.projector.scope], 'TelescopeResultsClass' },
-            icon_map[v.projector.type],
+            icon_map[v.projector.scope],
+            { icon_map[v.projector.type], 'TelescopeResultsConstant' },
             string.upper(v.projector.group),
-            { v.name, 'TelescopeResultsIdentifier' },
+            v.name,
             { v.command or '', 'TelescopeResultsComment' },
           }
         end
@@ -139,7 +139,7 @@ local function active_debug_sessions(opts)
         local make_display = function(tbl)
           local v = tbl.value
           return displayer {
-            { v.label, 'TelescopeResultsIdentifier' },
+            v.label,
             { v.comment or '', 'TelescopeResultsComment' },
           }
         end
@@ -177,7 +177,7 @@ local function active_tasks_sessions(opts)
     finder = finders.new_table {
       results = vim.tbl_values(output.list_outputs()),
       entry_maker = function(entry)
-        local ordinal = entry.name .. entry.tag
+        local ordinal = entry.name .. entry.bufnr
         local displayer = entry_display.create {
           separator = ' ',
           items = {
@@ -189,8 +189,8 @@ local function active_tasks_sessions(opts)
         local make_display = function(tbl)
           local v = tbl.value
           return displayer {
-            { v.name, 'TelescopeResultsIdentifier' },
-            { v.tag, 'TelescopeResultsComment' },
+            v.name,
+            { v.bufnr, 'TelescopeResultsComment' },
           }
         end
         return {
@@ -204,9 +204,9 @@ local function active_tasks_sessions(opts)
     attach_mappings = function(prompt_bufnr)
       actions.select_default:replace(function()
         actions.close(prompt_bufnr)
-        local entry = actionstate.get_selected_entry(prompt_bufnr)
-        if entry then
-          output.toggle(entry.value.tag)
+        local selection = actionstate.get_selected_entry(prompt_bufnr)
+        if selection then
+          output.toggle(selection.value.bufnr)
         end
       end)
       return true
