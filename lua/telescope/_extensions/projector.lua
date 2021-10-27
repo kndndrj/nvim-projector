@@ -169,13 +169,13 @@ end
 -- PICKER: -----------------------------
 -- Show current running tasks ----------
 ----------------------------------------
-local function active_tasks_sessions(opts)
+local function background_tasks_sessions(opts)
   opts = themes.get_dropdown(opts)
 
   pickers.new(opts, {
-    prompt_title = 'Active Tasks',
+    prompt_title = 'Background Tasks',
     finder = finders.new_table {
-      results = vim.tbl_values(output.list_outputs()),
+      results = vim.tbl_values(output.list_hidden_outputs()),
       entry_maker = function(entry)
         local ordinal = entry.name .. entry.bufnr
         local displayer = entry_display.create {
@@ -206,7 +206,7 @@ local function active_tasks_sessions(opts)
         actions.close(prompt_bufnr)
         local selection = actionstate.get_selected_entry(prompt_bufnr)
         if selection then
-          output.toggle(selection.value.bufnr)
+          output.open(selection.value.bufnr)
         end
       end)
       return true
@@ -244,7 +244,7 @@ return telescope.register_extension({
     end,
 
     active_tasks = function(opts)
-      active_tasks_sessions(opts)
+      background_tasks_sessions(opts)
     end,
   },
 })

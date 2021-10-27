@@ -4,7 +4,7 @@ local M = {}
 M.outputs = {}
 
 
-function M.open(command, term_options, name)
+function M.start(command, term_options, name)
   if name == nil or name == '' then
     name = 'Task'
   end
@@ -24,27 +24,56 @@ function M.open(command, term_options, name)
 end
 
 
-function M.toggle(bufnr)
+function M.open(bufnr)
+  if not M.outputs[bufnr] then
+    print('Output not active')
+    return
+  end
+  local output = M.outputs[bufnr]
+  if output.winid ~= nil then
+    print('Already open')
+    return
+  end
+  vim.api.nvim_command('15split')
+  output.winid = vim.fn.win_getid()
+  vim.api.nvim_command('b ' .. bufnr)
+end
+
+
+function M.close(bufnr)
   if not M.outputs[bufnr] then
     print('Output not active')
     return
   end
   local output = M.outputs[bufnr]
   if output.winid == nil then
-    vim.api.nvim_command('15split')
-    output.winid = vim.fn.win_getid()
-    vim.api.nvim_command('b ' .. bufnr)
-  else
-    vim.api.nvim_win_close(output.winid, true)
-    output.winid = nil
+    print('Already closed')
+    return
   end
+  vim.api.nvim_win_close(output.winid, true)
+  output.winid = nil
 end
 
-function M.list_outputs()
+
+function M.list_hidden_outputs()
   local list = {}
   for bufnr, output in pairs(M.outputs) do
-    output.bufnr = bufnr
-    table.insert(list, output)
+    if output.winid == nil then
+      output.bufnr = bufnr
+      table.insert(list, output)
+    end
+  end
+  return list
+end
+
+
+function M.list_active_outputs()
+  local list = {}
+  for bufnr, output in pairs(M.outputs) do
+    if output.winid ~= nil then
+      output.bufnr = bufnr
+      table.insert(list, output)
+    end
   end
   return list
 end

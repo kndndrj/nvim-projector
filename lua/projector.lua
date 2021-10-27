@@ -64,7 +64,7 @@ local function run_task(configuration)
   end
 
   -- send task to the terminal
-  output.open(command, term_options, configuration.name)
+  output.start(command, term_options, configuration.name)
 end
 
 
@@ -95,20 +95,27 @@ end
 
 
 function M.toggle_output()
-  local outputs = output.outputs
-  local count = vim.tbl_count(outputs)
-  if count > 1 then
+  local hidden_outputs = output.list_hidden_outputs()
+  local active_outputs = output.list_active_outputs()
+
+  if #hidden_outputs == 1 and #active_outputs == 0 then
+    -- open the only element
+    for _, out in ipairs(hidden_outputs) do
+      output.open(out.bufnr)
+      return
+    end
+  elseif #hidden_outputs == 0 and #active_outputs == 1 then
+    -- close the only element
+    for _, out in ipairs(active_outputs) do
+      output.close(out.bufnr)
+      return
+    end
+  elseif #hidden_outputs > 0 then
     require'telescope'.extensions.projector.active_tasks()
     return
-  elseif count == 0 then
-    print('No active tasks')
-    return
   end
-  -- toggle the only element
-  for tag, _ in pairs(outputs) do
-    output.toggle(tag)
-    return
-  end
+
+  print('No hidden tasks running')
 end
 
 
