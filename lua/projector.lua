@@ -1,4 +1,5 @@
 local dap = require'dap'
+local output = require'projector.output'
 
 local M = {}
 
@@ -44,32 +45,7 @@ local function expand_config_variables(option)
 end
 
 
-local function open_terminal(command, term_options)
-  vim.api.nvim_command("bo 10new")
-  M.terminal_winid = vim.fn.win_getid()
-  vim.fn.termopen(command, term_options)
-  M.terminal_bufnr = vim.fn.bufnr()
-  vim.api.nvim_command("autocmd! BufDelete,BufUnload <buffer> lua require'projector'.bufnr = nil")
-end
-
-
-function M.toggle_terminal()
-  if M.terminal_bufnr == nil then
-    print('Buf not active')
-    return
-  end
-  if M.terminal_winid == nil then
-    vim.api.nvim_command("15split")
-    M.terminal_winid = vim.fn.win_getid()
-    vim.api.nvim_command('b ' .. M.terminal_bufnr)
-  else
-    vim.api.nvim_win_close(M.terminal_winid, true)
-    M.terminal_winid = nil
-  end
-end
-
-
-function M.run_task(configuration)
+local function run_task(configuration)
   configuration = vim.tbl_map(expand_config_variables, configuration)
   if not configuration.command then
     print('Task must specify a command')
@@ -88,7 +64,7 @@ function M.run_task(configuration)
   end
 
   -- send task to the terminal
-  open_terminal(command, term_options)
+  output.open(command, term_options, configuration.name)
 end
 
 
@@ -96,7 +72,7 @@ function M.run_task_or_debug(configuration)
   if configuration.projector.type == 'debug' then
     dap.run(configuration)
   elseif configuration.projector.type == 'tasks' then
-    M.run_task(configuration)
+    run_task(configuration)
   else
     print('Invalid task type')
   end
@@ -113,7 +89,25 @@ function M.continue(telescope_filter)
   elseif session.stopped_thread_id then
     session:_step('continue')
   else
-    require'telescope'.extensions.projector.active_session()
+    require'telescope'.extensions.projector.active_debug()
+  end
+end
+
+
+function M.toggle_output()
+  local outputs = output.outputs
+  local count = vim.tbl_count(outputs)
+  if count > 1 then
+    require'telescope'.extensions.projector.active_tasks()
+    return
+  elseif count == 0 then
+    print('No active tasks')
+    return
+  end
+  -- toggle the only element
+  for tag, _ in pairs(outputs) do
+    output.toggle(tag)
+    return
   end
 end
 
