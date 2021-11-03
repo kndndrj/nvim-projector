@@ -8,11 +8,27 @@ IDEs.
 
 [![run - debug](https://img.shields.io/badge/&#9654;_|_&#129714;-project-green?style=for-the-badge)]()
 
-Some of the code was coppied from yabs.nvim and nvim-dap. yabs.nvim is a great
-plugin, but it has a lot of functionality that I don't need, and nvim-dap's menues are a bit rough to
-navigate.
+Some of the code was coppied from [yabs.nvim](https://github.com/pianocomposer321/yabs.nvim) and
+[nvim-dap](https://github.com/mfussenegger/nvim-dap). yabs.nvim is a great plugin, but it has a lot
+of functionality that I don't need, and nvim-dap's menues are a bit rough to navigate.
 
 Hopefully that explains it :)
+
+## Installation
+#### Requirements
+- Neovim verson 0.5+
+- Telescope
+- nvim-dap
+
+If you are fine with that, install the following plugins with your favourite plugin manager
+(example using [packer.nvim](https://github.com/wbthomason/packer.nvim)):
+```lua
+use 'nvim-lua/plenary.nvim'
+use 'nvim-telescope/telescope.nvim'
+use 'mfussenegger/nvim-dap'
+-- and finally...
+use 'kndndrj/nvim-dap-projector'
+```
 
 ## Getting started
 The idea of this plugin is to separate **global** and **local** configurations:
@@ -22,6 +38,8 @@ The idea of this plugin is to separate **global** and **local** configurations:
 Further more, the configurations are divided into **debug** and **tasks** sections:
 - **Debug** configurations are exactly the same as nvim-dap configurations
 - **Tasks** configurations are for defining the shell commands.
+
+Ask for help with `:h dap-projector`!
 
 ## Configuration
 The configurations can be set in `init.lua` under the following table: 
