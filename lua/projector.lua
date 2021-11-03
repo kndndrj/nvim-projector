@@ -99,17 +99,13 @@ function M.toggle_output()
   local active_outputs = output.list_active_outputs()
 
   if #hidden_outputs == 1 and #active_outputs == 0 then
-    -- open the only element
-    for _, out in ipairs(hidden_outputs) do
-      output.open(out.bufnr)
-      return
-    end
+    -- open the only hidden element
+    output.open(hidden_outputs[1].bufnr)
+    return
   elseif #hidden_outputs == 0 and #active_outputs == 1 then
-    -- close the only element
-    for _, out in ipairs(active_outputs) do
-      output.close(out.bufnr)
-      return
-    end
+    -- close the only active element
+    output.close(active_outputs[1].bufnr)
+    return
   elseif #hidden_outputs > 0 then
     require'telescope'.extensions.projector.active_tasks()
     return
