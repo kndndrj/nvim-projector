@@ -85,34 +85,34 @@ end
 ----------------------------------------
 local choices = {
   {
-    label = "Run a task",
+    label = 'Run a task',
     action = function ()
       select_config({}, {project = true, global = true, tasks = true})
     end
   },
   {
-    label = "Close session",
-    comment = "debug adapter might keep running",
+    label = 'Close session',
+    comment = 'debug adapter might keep running',
     action = dap.close
   },
   {
-    label = "Pause a thread",
+    label = 'Pause a thread',
     action = dap.pause
   },
   {
-    label = "Restart session",
+    label = 'Restart session',
     action = dap.restart,
   },
   {
-    label = "Disconnect",
-    comment = "terminate = true",
+    label = 'Disconnect',
+    comment = 'terminate = true',
     action = function()
       dap.disconnect({ terminateDebuggee = true })
     end
   },
   {
-    label = "Disconnect",
-    comment = "terminate = false",
+    label = 'Disconnect',
+    comment = 'terminate = false',
     action = function()
       dap.disconnect({ terminateDebuggee = false })
     end,

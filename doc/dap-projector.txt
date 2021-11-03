@@ -1,0 +1,157 @@
+DAP-Projector                                                      *dap-projector*
+
+
+The idea of this plugin is to separate global and local configurations:
+- Global configs are the ones defined in the startup file (e.g. `init.lua`)
+- Local or project configs are defined in the project folder (e.g. `launch.json` or `tasks.json`)
+
+Further more, the configurations are divided into debug and tasks sections:
+- Debug configurations are exactly the same as nvim-dap configurations
+- Tasks configurations are for defining the shell commands.
+
+--------------------------------------------------------------------------------
+CONFIGURATION                                        *dap-projector-configuration*
+
+The configurations can be set in `init.lua` under the following table:
+>
+    require'projector'.configurations.<scope>.<type>.<language-group>
+<
+
+Or they can be read from a `.json` file in your project folder. That can be achieved by placing
+this in your `init.lua`:
+>
+    -- takes an optional argument for path, default is './.vim/projector.json'
+    require'projector.config_utils'.load_project_configurations()
+<
+
+If you want to load existing nvim-dap configurations, add this to `init.lua`:
+>
+    require'projector.config_utils'.load_dap_configurations()
+<
+
+It is recommended to add the configurations under the `global` table in `init.lua` and use
+`projector.json` to specify the `project` (local) configurations.
+
+Examples of the configurations are listed in the Configuraion Examples (#configuration-examples)
+section.
+
+--------------------------------------------------------------------------------
+USAGE                                                        *dap-projector-usage*
+
+The recommended way of using is to replace nvim-dap `.continue()` mapping and use the function
+provided by this plugin instead (this will replace dap's UI with telescope):
+>
+    -- init.lua
+    vim.api.nvim_set_keymap('n', '<F5>', '<Cmd>lua require"projector".continue("all")<CR>', {noremap=true})
+<
+
+Use this mapping to manage currently running "non-debug" tasks (toggle command output windows):
+>
+    vim.api.nvim_set_keymap('n', '<leader>dt', '<Cmd>lua require"projector".toggle_output()<CR>', {noremap=true})
+<
+
+--------------------------------------------------------------------------------
+CONFIGURATION EXAMPLES                      *dap-projector-configuration_examples*
+
+INIT.LUA                                                  *dap-projector-init.lua*
+
+*   Global debug:
+>
+        require'projector'.configurations.global.debug.go = {
+          {
+            type = 'go',
+            name = 'Debug File',
+            request = 'launch',
+            showLog = false,
+            program = '${file}',
+            dlvToolPath = vim.fn.exepath('dlv'),
+          },
+        }
+<
+*   Global tasks:
+>
+        require'projector'.configurations.global.tasks.shell = {
+          {
+            name = 'Good Morning',
+            command = 'echo',
+            args = {
+              'I',
+              'need',
+              '$SOMETHING',
+            },
+            env = {
+              SOMETHING = 'coffee'
+            },
+          },
+          -- or
+          {
+            name = 'Good Morning',
+            command = 'echo "I need more sleep"',
+            cwd = '${workspaceFolder}',
+          },
+        }
+<
+*   Project-local debug:
+>
+        require'projector'.configurations.project.debug.go = {
+          -- not recommended to use in init.lua
+          -- ...
+        }
+<
+*   Project-local tasks:
+>
+        require'projector'.configurations.project.tasks.shell = {
+          -- not recommended to use in init.lua
+          -- ...
+        }
+<
+
+PROJECTOR.JSON                                      *dap-projector-projector.json*
+
+*   Project-local debug:
+>
+        {
+          "debug": {
+            "go": [
+              {
+                // add the following section to any debug config
+                // and run the configuration in non-debug mode
+                "projector": {
+                  "command": "go run ${workspaceFolder}/main.go"
+                },
+                "type": "go",
+                "request": "launch",
+                "name": "My Project",
+                "program": "${workspaceFolder}/main.go",
+                "cwd": "${workspaceFolder}",
+                "console": "integratedTerminal",
+                "args": [
+                  "--argument",
+                  "1234"
+                ],
+                "env": {
+                  "SOME_BOOL": "true"
+                },
+                "dlvToolPath": "/usr/bin/dlv",
+                "showLog": false
+              }
+            ]
+          },
+        // ...
+<
+*   Project-local tasks (still the same file):
+>
+          "tasks": {
+            "go": [
+              {
+                "name": "Generate",
+                "command": "go generate",
+                "args": [
+                  "${workspaceFolder}/tools.go"
+                ]
+              }
+            ]
+          }
+        }
+<
+
