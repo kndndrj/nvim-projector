@@ -95,7 +95,7 @@ require'projector'.configurations.global.debug.go = {
 
 - Global tasks:
 ```lua
-require'projector'.configurations.global.tasks.shell = {
+require'projector'.configurations.global.tasks.sh = {
   {
     name = 'Good Morning',
     command = 'echo',
@@ -127,7 +127,7 @@ require'projector'.configurations.project.debug.go = {
 
 - Project-local tasks:
 ```lua
-require'projector'.configurations.project.tasks.shell = {
+require'projector'.configurations.project.tasks.sh = {
   -- not recommended to use in init.lua
   -- ...
 }
