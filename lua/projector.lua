@@ -1,5 +1,6 @@
 local dap = require'dap'
 local output = require'projector.output'
+local utils = require'projector.utils'
 
 local M = {}
 
@@ -62,13 +63,98 @@ local function run_task(configuration)
   if configuration.cwd then
     term_options.cwd = configuration.cwd
   end
+  if configuration.on_exit then
+    term_options.on_exit = configuration.on_exit
+  end
 
   -- send task to the terminal
   output.start(command, term_options, configuration.name)
 end
 
+local function handle_dependencies(configuration)
+  local status_map = {}
+  local dependencies_configs = {}
+
+  -- find the dependencies and fill the status map
+  for _, dependency in pairs(configuration.depends) do
+    local dep = string.gmatch(dependency, '[^.]+')
+    local dep_scope = dep()
+    local dep_type = dep()
+    local dep_group = dep()
+    local dep_name = dep()
+    if dep_type ~= 'tasks' then
+      error('only tasks can be specified as dependencies', 2)
+      return
+    end
+    for _, dependency_config in pairs(M.configurations[dep_scope][dep_type][dep_group]) do
+      if dependency_config.name == dep_name then
+        dependency_config = utils.deepcopy(dependency_config)
+        dependency_config.projector = {
+          scope = dep_scope,
+          type = dep_type,
+          group = dep_group,
+        }
+        status_map[dep_scope..dep_type..dep_group..dep_name] = false
+        table.insert(dependencies_configs, dependency_config)
+      end
+    end
+  end
+
+  -- copy the master config
+  local master_config = utils.deepcopy(configuration)
+  master_config.depends = nil
+  local index = 0
+
+  -- recursevley run the dependencies
+  for _, dep_config in pairs(dependencies_configs) do
+    index = index + 1
+    -- first dependency calls the master task and waits for other dependencies
+    if index == 1 then
+      -- need to return a function, since the config gets expanded later
+      dep_config.on_exit = function()
+        return function ()
+          status_map[dep_config.projector.scope..dep_config.projector.type..dep_config.projector.group..dep_config.name] = true
+          local check_finished = function ()
+            for _, d in pairs(status_map) do
+              if d == false then
+                return false
+              end
+            end
+            return true
+          end
+          vim.wait(10000, check_finished)
+          M.run_task_or_debug(master_config)
+        end
+      end
+    else
+      dep_config.on_exit = function()
+        return function ()
+          status_map[dep_config.projector.scope..dep_config.projector.type..dep_config.projector.group..dep_config.name] = true
+        end
+      end
+    end
+
+    if dep_config.depends ~= '' and dep_config.depends ~= nil then
+      local ok = pcall(handle_dependencies, dep_config)
+      if not ok then
+        print('Could not find one or more dependencies for "' .. dep_config.name .. '"')
+        return
+      end
+    else
+      run_task(dep_config)
+    end
+  end
+end
 
 function M.run_task_or_debug(configuration)
+  -- handle dependencies
+  if configuration.depends ~= '' and configuration.depends ~= nil then
+    local ok = pcall(handle_dependencies, configuration)
+    if not ok then
+      print('Could not find one or more dependencies for "' .. configuration.name .. '"')
+    end
+    return
+  end
   if configuration.projector.type == 'debug' then
     dap.run(configuration)
   elseif configuration.projector.type == 'tasks' then

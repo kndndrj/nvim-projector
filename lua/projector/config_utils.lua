@@ -45,14 +45,14 @@ function M.load_project_configurations(path)
         projector_configs.project.debug[group] = {}
       end
       for _, configuration in pairs(configurations) do
-        -- if projector field exists, add the config to tasks as well
-        if configuration.projector then
+        -- if run_command field exists, add the config to tasks as well
+        if configuration.run_command then
           if not projector_configs.project.tasks[group] then
             projector_configs.project.tasks[group] = {}
           end
           local task = {
             name = configuration.name,
-            command = configuration.projector.command,
+            command = configuration.run_command,
             args = configuration.args,
             env = configuration.env,
             console = configuration.console,

@@ -142,9 +142,10 @@ require'projector'.configurations.project.tasks.sh = {
       {
         // add the following section to any debug config
         // and run the configuration in non-debug mode
-        "projector": {
-          "command": "go run ${workspaceFolder}/main.go"
-        },
+        "run_command": "go run ${workspaceFolder}/main.go",
+        "depends": [
+          "project.tasks.go.Generate Stuff"
+        ],
         "type": "go",
         "request": "launch",
         "name": "My Project",
@@ -171,7 +172,7 @@ require'projector'.configurations.project.tasks.sh = {
   "tasks": {
     "go": [
       {
-        "name": "Generate",
+        "name": "Generate Stuff",
         "command": "go generate",
         "args": [
           "${workspaceFolder}/tools.go"
