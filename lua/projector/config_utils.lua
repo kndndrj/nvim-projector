@@ -76,6 +76,13 @@ function M.load_project_configurations(path)
     end
   end
 
+  -- database configurations
+  if data.database then
+    for setting, configuration in pairs(data.database) do
+      vim.g[setting] = configuration
+    end
+  end
+
 end
 
 

@@ -1,6 +1,9 @@
 # Neovim DAP Projector
 Better project-specific configuration for nvim-dap with basic task execution in the integrated
-terminal. Start the dubugger using telescope!
+terminal.
+
+**Start the debugger and tasks using telescope!**
+**Load dadbod configuration from a `.json` file**
 
 ## Why Another Plugin?
 Think of it as a simple wrapper for nvim-dap with Run Debug functionality found in many
@@ -17,8 +20,9 @@ Hopefully that explains it :)
 ## Installation
 #### Requirements
 - Neovim verson 0.5+
-- Telescope
-- nvim-dap
+- [telescope](https://github.com/nvim-telescope/telescope.nvim)
+- [nvim-dap](https://github.com/mfussenegger/nvim-dap)
+- [dadbod(-ui)](https://github.com/kristijanhusak/vim-dadbod-ui) (optional)
 
 If you are fine with that, install the following plugins with your favourite plugin manager
 (example using [packer.nvim](https://github.com/wbthomason/packer.nvim)):
@@ -26,6 +30,9 @@ If you are fine with that, install the following plugins with your favourite plu
 use 'nvim-lua/plenary.nvim'
 use 'nvim-telescope/telescope.nvim'
 use 'mfussenegger/nvim-dap'
+-- optionally...
+use 'tpope/vim-dadbod'
+use 'kristijanhusak/vim-dadbod-ui'
 -- and finally...
 use 'kndndrj/nvim-dap-projector'
 ```
@@ -38,6 +45,8 @@ The idea of this plugin is to separate **global** and **local** configurations:
 Further more, the configurations are divided into **debug** and **tasks** sections:
 - **Debug** configurations are exactly the same as nvim-dap configurations
 - **Tasks** configurations are for defining the shell commands.
+
+The plugin can also load vim-dadbod-ui global variables from the `.json` file.
 
 Ask for help with `:h dap-projector`!
 
@@ -134,52 +143,68 @@ require'projector'.configurations.project.tasks.sh = {
 ```
 
 #### `projector.json`
+see the whole 
 - Project-local debug:
+add `run_command` to any debug config and run the configuration in
+non-debug mode.
 ```json
-{
-  "debug": {
-    "go": [
-      {
-        // add the following section to any debug config
-        // and run the configuration in non-debug mode
-        "run_command": "go run ${workspaceFolder}/main.go",
-        "depends": [
-          "project.tasks.go.Generate Stuff"
-        ],
-        "type": "go",
-        "request": "launch",
-        "name": "My Project",
-        "program": "${workspaceFolder}/main.go",
-        "cwd": "${workspaceFolder}",
-        "console": "integratedTerminal",
-        "args": [
-          "--argument",
-          "1234"
-        ],
-        "env": {
-          "SOME_BOOL": "true"
-        },
-        "dlvToolPath": "/usr/bin/dlv",
-        "showLog": false
-      }
-    ]
-  },
-// ...
+"debug": {
+  "go": [
+    {
+      "run_command": "go run ${workspaceFolder}/main.go",
+      "depends": [
+        "project.tasks.go.Generate Stuff"
+      ],
+      "type": "go",
+      "request": "launch",
+      "name": "My Project",
+      "program": "${workspaceFolder}/main.go",
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "args": [
+        "--argument",
+        "1234"
+      ],
+      "env": {
+        "SOME_BOOL": "true"
+      },
+      "dlvToolPath": "/usr/bin/dlv",
+      "showLog": false
+    }
+  ]
+}
 ```
 
 - Project-local tasks (still the same file):
 ```json
-  "tasks": {
-    "go": [
-      {
-        "name": "Generate Stuff",
-        "command": "go generate",
-        "args": [
-          "${workspaceFolder}/tools.go"
-        ]
-      }
-    ]
-  }
+"tasks": {
+  "go": [
+    {
+      "name": "Generate Stuff",
+      "command": "go generate",
+      "args": [
+        "${workspaceFolder}/tools.go"
+      ]
+    }
+  ]
+}
+```
+
+- Project-local vim-dadbod-ui (still the same file):
+```json
+"database": {
+  "dbs": [
+    {
+      "name": "my-db",
+      "url": "postgres://postgres:mypassword@localhost:5432/my-db"
+    }
+  ],
+  "db_ui_table_helpers": {
+    "postgresql": {
+      "List": "select * from {table} order by id asc"
+    }
+  },
+  "db_ui_auto_execute_table_helpers": 1
 }
 ```
 
