@@ -82,12 +82,20 @@ function M.load_project_configurations(path)
       vim.g[setting] = configuration
     end
   end
-
 end
 
 
--- Append all configurations to a list, depending on the filters
-function M.list_configurations(filters)
+-- Append all configurations to a list, depending on the filters and sort by value
+-- filters:
+--      project <bool>
+--      global <bool>
+--      debug <bool>
+--      tasks <bool>
+--      group <string> - e.g. "go", "python", "c"
+-- sort:
+--      key <string> - "scope", "type", "group"
+--      order <bool> - true - asc, false - desc
+function M.list_configurations(filters, sort)
   if filters == nil or next(filters) == nil then
     filters = {
       project = true,
@@ -122,6 +130,16 @@ function M.list_configurations(filters)
     end
     end
   end
+
+  -- sort if specified
+  if sort ~= nil and next(sort) ~= nil then
+    local sort_fn = function (k1, k2) return k1.projector[sort.key] < k2.projector[sort.key] end
+    if not sort.order then
+      sort_fn = function (k1, k2) return k1.projector[sort.key] > k2.projector[sort.key] end
+    end
+    table.sort(list, sort_fn)
+  end
+
   return list
 end
 

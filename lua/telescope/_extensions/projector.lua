@@ -23,13 +23,13 @@ local icon_map = {
   global = '',
 }
 
-local function select_config(opts, filters)
+local function select_config(opts, filters, sort)
   opts = themes.get_dropdown(opts)
 
   pickers.new(opts, {
     prompt_title = 'Tasks',
     finder = finders.new_table {
-      results = vim.tbl_values(config_utils.list_configurations(filters)),
+      results = vim.tbl_values(config_utils.list_configurations(filters, sort)),
       entry_maker = function(entry)
         local ordinal = entry.projector.scope ..
                         entry.projector.type ..
@@ -221,22 +221,22 @@ end
 return telescope.register_extension({
   exports = {
     all = function(opts)
-      select_config(opts, {})
+      select_config(opts, {}, {key = "scope", order = false})
     end,
     project = function(opts)
-      select_config(opts, {project = true, debug = true, tasks = true})
+      select_config(opts, {project = true, debug = true, tasks = true}, {key = "scope", order = false})
     end,
     global = function(opts)
-      select_config(opts, {global = true, debug = true, tasks = true})
+      select_config(opts, {global = true, debug = true, tasks = true}, {key = "scope", order = false})
     end,
     debug = function(opts)
-      select_config(opts, {project = true, global = true, debug = true})
+      select_config(opts, {project = true, global = true, debug = true}, {key = "scope", order = false})
     end,
     tasks = function(opts)
-      select_config(opts, {project = true, global = true, tasks = true})
+      select_config(opts, {project = true, global = true, tasks = true}, {key = "scope", order = false})
     end,
     filetype = function(opts)
-      select_config(opts, {project = true, global = true, debug = true, tasks = true, group = {vim.api.nvim_buf_get_option(0, 'filetype')}})
+      select_config(opts, {project = true, global = true, debug = true, tasks = true, group = {vim.api.nvim_buf_get_option(0, 'filetype')}}, {key = "scope", order = false})
     end,
 
     active_debug = function(opts)
