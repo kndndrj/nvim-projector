@@ -1,4 +1,4 @@
-# Neovim DAP Projector
+# Neovim Projector
 
 Better project-specific configuration for nvim-dap with basic task execution in
 the integrated terminal.
@@ -40,7 +40,7 @@ use 'mfussenegger/nvim-dap'
 use 'tpope/vim-dadbod'
 use 'kristijanhusak/vim-dadbod-ui'
 -- and finally...
-use 'kndndrj/nvim-dap-projector'
+use 'kndndrj/nvim-projector'
 ```
 
 ## Getting started
@@ -57,7 +57,7 @@ Further more, the configurations are divided into **debug** and **tasks** sectio
 
 The plugin can also load vim-dadbod-ui global variables from the `.json` file.
 
-Ask for help with `:h dap-projector`!
+Ask for help with `:h projector`!
 
 ## Configuration
 
@@ -170,7 +170,7 @@ require'projector'.configurations.project.tasks.sh = {
 
 #### `projector.json`
 
-see the whole
+see the whole example [here](examples/projector.json).
 
 - Project-local debug:
   add `run_command` to any debug config and run the configuration in

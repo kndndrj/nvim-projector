@@ -201,4 +201,36 @@ function M.toggle_output()
 end
 
 
+-- Show hidden tasks
+-- Meant for statusbar use
+function M.status()
+  local hidden_outputs = output.list_hidden_outputs()
+  local active_outputs = output.list_active_outputs()
+  local ho = ''
+  if #hidden_outputs > 0 then
+    for _, task in pairs(hidden_outputs) do
+      if ho == '' then
+        ho = 'Hidden: "' .. task.name .. '"'
+      else
+        ho = ho .. ', "' .. task.name .. '"'
+      end
+    end
+  end
+  local ao = ''
+  if #active_outputs > 0 then
+    for _, task in pairs(active_outputs) do
+      if ao == '' then
+        ao = 'Active: "' .. task.name .. '"'
+      else
+        ao = ao .. ', "' .. task.name .. '"'
+      end
+    end
+  end
+  if ao ~= '' or ho ~= '' then
+    return ao .. ' ' .. ho
+  end
+  return ''
+end
+
+
 return M

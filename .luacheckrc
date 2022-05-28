@@ -1,2 +1,2 @@
 read_globals = { 'vim' }
-ignore = { '631' }
+ignore = { '631', '122' }

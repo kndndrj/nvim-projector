@@ -1,4 +1,4 @@
-DAP-Projector                                                      *dap-projector*
+Projector                                                          *projector*
 
 
 The idea of this plugin is to separate global and local configurations:
@@ -13,7 +13,7 @@ Further more, the configurations are divided into debug and tasks sections:
 The plugin can also load vim-dadbod-ui global variables from the `.json` file.
 
 --------------------------------------------------------------------------------
-CONFIGURATION                                        *dap-projector-configuration*
+CONFIGURATION                                        *projector-configuration*
 
 The configurations can be set in `init.lua` under the following table:
 >
@@ -40,7 +40,7 @@ Examples of the configurations are listed in the Configuraion Examples
 (#configuration-examples) section.
 
 --------------------------------------------------------------------------------
-USAGE                                                        *dap-projector-usage*
+USAGE                                                        *projector-usage*
 
 The recommended way of using is to replace nvim-dap `.continue()` mapping and
 use the function provided by this plugin instead (this will replace dap's UI
@@ -59,9 +59,9 @@ output windows):
 <
 
 --------------------------------------------------------------------------------
-CONFIGURATION EXAMPLES                      *dap-projector-configuration_examples*
+CONFIGURATION EXAMPLES                      *projector-configuration_examples*
 
-INIT.LUA                                                  *dap-projector-init.lua*
+INIT.LUA                                                  *projector-init.lua*
 
 *   Global debug:
 >
@@ -114,7 +114,7 @@ INIT.LUA                                                  *dap-projector-init.lu
         }
 <
 
-PROJECTOR.JSON                                      *dap-projector-projector.json*
+PROJECTOR.JSON                                      *projector-projector.json*
 
 *   Project-local debug:
 add `run_command` to any debug config and run the configuration in non-debug mode.
