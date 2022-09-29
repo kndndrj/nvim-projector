@@ -1,30 +1,31 @@
+local Output = require'projector.contract.output'
 local has_dap, dap = pcall(require, 'dap')
 local has_dapui, dapui = pcall(require, 'dapui')
 
-local M = {}
+local DapOutput = Output:new()
 
-function M.init(self)
+function DapOutput:init()
   if has_dap then
     dap.run(self.configuration)
     self.status = "active"
   end
 end
 
-function M.open(self)
+function DapOutput:open()
   if has_dapui then
     dapui.open()
     self.status = "active"
   end
 end
 
-function M.close(self)
+function DapOutput:close()
   if has_dapui then
     dapui.close()
     self.status = "hidden"
   end
 end
 
-function M.ask()
+function DapOutput:list_actions()
   if not has_dap then
     return
   end
@@ -34,7 +35,8 @@ function M.ask()
     return {
       {
         label = "Continue",
-        action = session:_step('continue'),
+        action = function() session:_step('continue') end,
+        override = true,
       },
     }
   end
@@ -93,4 +95,4 @@ function M.ask()
   return choices
 end
 
-return M
+return DapOutput

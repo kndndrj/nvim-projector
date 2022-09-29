@@ -41,7 +41,7 @@
         "args": [
           "-a",
           "-l",
-          "$HOME/"
+          "${workspaceFolder}/"
         ]
       }
     ]

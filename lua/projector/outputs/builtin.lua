@@ -1,16 +1,20 @@
-local M = {}
+Output = require'projector.contract.output'
 
-function M.init(self)
+local BuiltinOutput = Output:new()
+
+function BuiltinOutput:init(configuration)
   local name = self.meta.name or 'Builtin'
+
+  local command = configuration.command .. ' "' .. table.concat(configuration.args, '" "') .. '"'
   local term_options = {
-    clear_env = true,
-    env = self.env,
-    cwd = self.cwd,
+    clear_env = false,
+    env = configuration.env,
+    cwd = configuration.cwd,
   }
 
   -- open the terminal in a new buffer
   vim.api.nvim_command('bo 15new')
-  vim.fn.termopen(self.command, term_options)
+  vim.fn.termopen(command, term_options)
 
   local bufnr = vim.fn.bufnr()
   self.meta.bufnr = bufnr
@@ -39,7 +43,7 @@ function M.init(self)
       end })
 end
 
-function M.open(self)
+function BuiltinOutput:open()
   if self.status == "inactive" or self.status == "" then
     print('Output not active')
     return
@@ -56,7 +60,7 @@ function M.open(self)
   self.status = "active"
 end
 
-function M.close(self)
+function BuiltinOutput:close()
   if self.status == "inactive" or self.status == "" then
     print('Output not active')
     return
@@ -71,4 +75,7 @@ function M.close(self)
   self.status = "hidden"
 end
 
-return M
+function BuiltinOutput:list_actions()
+end
+
+return BuiltinOutput
