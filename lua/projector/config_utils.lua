@@ -36,7 +36,12 @@ function M.load_project_configurations(path)
   end
 
   local contents = table.concat(lines, '\n')
-  local data = vim.fn.json_decode(contents)
+  local valid_json, data = pcall(vim.fn.json_decode, contents)
+
+  if not valid_json then
+    vim.notify('Error parsing project json file: ' .. resolved_path, vim.log.levels.ERROR, {title= 'nvim-projector'})
+    return false
+  end
 
   -- debug configurations
   if data.debug then
