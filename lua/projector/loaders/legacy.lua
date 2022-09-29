@@ -2,7 +2,7 @@ local Task = require 'projector.task'
 local Configuration = require 'projector.contract.configuration'
 local Loader = require 'projector.contract.loader'
 
-function Task:expand_variables(configuration)
+function Configuration:expand_variables()
   local function expand_config_variables(option)
     if type(option) == 'function' then
       option = option()
@@ -31,7 +31,7 @@ function Task:expand_variables(configuration)
     return ret
   end
 
-  return vim.tbl_map(expand_config_variables, configuration)
+  return vim.tbl_map(expand_config_variables, self)
 end
 
 local LegacyLoader = Loader:new("legacy")

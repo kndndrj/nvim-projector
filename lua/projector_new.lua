@@ -40,9 +40,19 @@ function M.refresh_jobs()
 end
 
 function M.live_tasks()
-  local active = {}
+  local live = {}
   for _, t in pairs(M.tasks) do
     if t:is_live() then
+      table.insert(live, t)
+    end
+  end
+  return live
+end
+
+function M.active_tasks()
+  local active = {}
+  for _, t in pairs(M.tasks) do
+    if t:is_active() then
       table.insert(active, t)
     end
   end
@@ -52,7 +62,7 @@ end
 function M.hidden_tasks()
   local hidden = {}
   for _, t in pairs(M.tasks) do
-    if t:is_live() then
+    if t:is_hidden() then
       table.insert(hidden, t)
     end
   end
@@ -136,6 +146,44 @@ function M.continue()
     end
   )
 
+end
+
+function M.toggle_output()
+  local hidden_tasks = M.hidden_tasks()
+  local active_tasks = M.active_tasks()
+
+  if #hidden_tasks == 1 and #active_tasks == 0 then
+    -- open the only hidden element
+    hidden_tasks[1]:open_output()
+    return
+  elseif #hidden_tasks == 0 and #active_tasks == 1 then
+    -- close the only active element
+    active_tasks[1]:close_output()
+    return
+  elseif #hidden_tasks > 0 then
+    -- select a hidden task to open
+    vim.ui.select(
+      hidden_tasks,
+      {
+        prompt = 'select a hidden task to open:',
+        format_item = function(item)
+          return item.meta.name
+        end,
+      },
+      function(choice)
+        if choice then
+          choice:open_output()
+        end
+      end
+    )
+    return
+  end
+
+  print('No hidden tasks running')
+end
+
+function M.status()
+  return "not implemented yet"
 end
 
 return M

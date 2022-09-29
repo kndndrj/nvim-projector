@@ -37,11 +37,6 @@ function Task:new(configuration, opts)
   return o
 end
 
--- Function for expanding config variables
-function Task:expand_variables(configuration)
-  error("not_implemented")
-end
-
 function Task:configure_outputs()
   for _, cap in pairs(self.capabilities) do
     if not self.outputs[cap] then
@@ -73,12 +68,21 @@ function Task:run(cap)
 
   self:configure_outputs()
 
-  self.outputs[cap]:init(self:expand_variables(self.configuration))
+  self.outputs[cap]:init(self.configuration:expand_variables())
 end
 
 function Task:is_live()
   for _, o in pairs(self.outputs) do
     if o and o.status ~= "inactive" and o.status ~= "" then
+      return true
+    end
+  end
+  return false
+end
+
+function Task:is_active()
+  for _, o in pairs(self.outputs) do
+    if o.status == "active" then
       return true
     end
   end
