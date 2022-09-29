@@ -7,9 +7,9 @@ function Configuration:expand_variables()
   return vim.tbl_map(common.expand_config_variables, self)
 end
 
-local LegacyRcLoader = Loader:new("projector-direct")
+local LegacyRcLoader = Loader:new("legacy-rc")
 
-function LegacyRcLoader:load(path)
+function LegacyRcLoader:load()
   local data = require 'projector'.configurations
 
   -- map with Task objects

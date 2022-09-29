@@ -8,6 +8,10 @@ local config = {
       module = require 'projector.loaders.legacy.rc',
       path = '',
     },
+    {
+      module = require 'projector.loaders.dap',
+      path = '',
+    },
   },
   outputs = {
     task = require 'projector.outputs.builtin',
