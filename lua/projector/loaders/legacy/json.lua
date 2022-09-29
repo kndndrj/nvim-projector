@@ -3,7 +3,9 @@ local Configuration = require 'projector.contract.configuration'
 local Loader = require 'projector.contract.loader'
 local common = require 'projector.loaders.legacy.common'
 
-function Configuration:expand_variables()
+local Config = Configuration:new()
+
+function Config:expand_variables()
   return vim.tbl_map(common.expand_config_variables, self)
 end
 
@@ -40,7 +42,7 @@ function LegacyJsonLoader:load(path)
           table.insert(task_opts.capabilities, "task")
           config.command = config.run_command
         end
-        local configuration = Configuration:new(config)
+        local configuration = Config:new(config)
         local task = Task:new(configuration, task_opts)
         table.insert(tasks, task)
 
@@ -56,7 +58,7 @@ function LegacyJsonLoader:load(path)
         -- add type to the configuration
         config.type = type
         local task_opts = { capabilities = { "task" }, scope = "project" }
-        local configuration = Configuration:new(config)
+        local configuration = Config:new(config)
         local task = Task:new(configuration, task_opts)
         table.insert(tasks, task)
 
