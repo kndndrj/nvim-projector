@@ -1,42 +1,15 @@
 local Task = require 'projector.task'
 local Configuration = require 'projector.contract.configuration'
 local Loader = require 'projector.contract.loader'
+local common = require 'projector.loaders.legacy.common'
 
 function Configuration:expand_variables()
-  local function expand_config_variables(option)
-    if type(option) == 'function' then
-      option = option()
-    end
-    if type(option) == 'table' then
-      return vim.tbl_map(expand_config_variables, option)
-    end
-    if type(option) ~= 'string' then
-      return option
-    end
-    local variables = {
-      file = vim.fn.expand('%'),
-      fileBasename = vim.fn.expand('%:t'),
-      fileBasenameNoExtension = vim.fn.fnamemodify(vim.fn.expand('%:t'), ':r'),
-      fileDirname = vim.fn.expand('%:p:h'),
-      fileExtname = vim.fn.expand('%:e'),
-      relativeFile = vim.fn.expand('%'),
-      relativeFileDirname = vim.fn.fnamemodify(vim.fn.expand('%:h'), ':r'),
-      workspaceFolder = vim.fn.getcwd(),
-      workspaceFolderBasename = vim.fn.fnamemodify(vim.fn.getcwd(), ':t'),
-    }
-    local ret = option
-    for key, val in pairs(variables) do
-      ret = ret:gsub('${' .. key .. '}', val)
-    end
-    return ret
-  end
-
-  return vim.tbl_map(expand_config_variables, self)
+  return vim.tbl_map(common.expand_config_variables, self)
 end
 
-local LegacyLoader = Loader:new("legacy")
+local LegacyJsonLoader = Loader:new("legacy-json")
 
-function LegacyLoader:load(path)
+function LegacyJsonLoader:load(path)
   path = path or (vim.fn.getcwd() .. '/.vim/projector.json')
 
   if not vim.loop.fs_stat(path) then
@@ -102,4 +75,4 @@ function LegacyLoader:load(path)
   return tasks
 end
 
-return LegacyLoader
+return LegacyJsonLoader

@@ -9,6 +9,19 @@ M.config = require 'projector.config'
 -- value: job
 M.tasks = {}
 
+-- for legacy reason
+-- TODO: remove in the future
+M.configurations = {
+  global = {
+    debug = {},
+    tasks = {},
+  },
+  project = {
+    debug = {},
+    tasks = {},
+  }
+}
+
 local function load_jobs()
   local config = M.config
 
@@ -17,9 +30,11 @@ local function load_jobs()
   -- Load all tasks from different loaders
   for _, loader in pairs(config.loaders) do
     local l = loader.module
-    local t = l:load(loader.path)
-    if t then
-      tasks = vim.tbl_extend("keep", tasks, t)
+    local ts = l:load(loader.path)
+    if ts then
+      for _, t in pairs(ts) do
+        table.insert(tasks, t)
+      end
     end
   end
 
