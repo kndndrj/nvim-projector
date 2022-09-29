@@ -6,7 +6,7 @@
         "depends": [
           "project.tasks.go.Generate Stuff"
         ],
-        "type": "go",
+        "type": "delve",
         "request": "launch",
         "name": "My Project",
         "program": "${workspaceFolder}/main.go",
@@ -31,6 +31,17 @@
         "command": "go generate",
         "args": [
           "${workspaceFolder}/tools.go"
+        ]
+      }
+    ],
+    "shell": [
+      {
+        "name": "Ls",
+        "command": "ls",
+        "args": [
+          "-a",
+          "-l",
+          "$HOME/"
         ]
       }
     ]
