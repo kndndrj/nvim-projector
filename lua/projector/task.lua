@@ -71,6 +71,10 @@ function Task:run(cap)
   self.outputs[cap]:init(self.configuration:expand_variables())
 end
 
+function Task:get_capabilities()
+  return self.capabilities
+end
+
 function Task:is_live()
   for _, o in pairs(self.outputs) do
     if o and o.status ~= "inactive" and o.status ~= "" then

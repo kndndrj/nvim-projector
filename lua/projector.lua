@@ -86,7 +86,27 @@ local function select_and_run_task()
     },
     function(choice)
       if choice then
-        choice:run("task")
+        local caps = choice:get_capabilities()
+        if #caps == 1 then
+          choice:run(caps[1])
+        elseif #caps > 1 then
+
+          vim.ui.select(
+            caps,
+            {
+              prompt = 'select mode:',
+              format_item = function(item)
+                return item
+              end,
+            },
+            function(c)
+              if c then
+                choice:run(c)
+              end
+            end
+          )
+
+        end
       end
     end
   )

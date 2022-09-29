@@ -1,13 +1,24 @@
-local Output = require'projector.contract.output'
+local Output = require 'projector.contract.output'
 local has_dap, dap = pcall(require, 'dap')
 local has_dapui, dapui = pcall(require, 'dapui')
 
 local DapOutput = Output:new()
 
-function DapOutput:init()
+function DapOutput:init(configuration)
   if has_dap then
-    dap.run(self.configuration)
     self.status = "active"
+
+    -- set status to inactive and close outputs on exit
+    dap.listeners.before.event_terminated["projector"] = function()
+      self:close()
+      self.status = "inactive"
+    end
+    dap.listeners.before.event_exited["projector"] = function()
+      self:close()
+      self.status = "inactive"
+    end
+
+    dap.run(configuration)
   end
 end
 
@@ -66,26 +77,26 @@ function DapOutput:list_actions()
         dap.disconnect({ terminateDebuggee = false })
       end,
     },
-    {
-      label = "Do nothing",
-      action = function() end,
-    },
   }
 
   -- Add stopped threads action
   local stopped_threads = vim.tbl_filter(function(t) return t.stopped end, session.threads)
 
   if next(stopped_threads) then
-    for t in pairs(stopped_threads) do
+    -- empty line before threads for prettier ui. TODO?
+      table.insert(choices, #choices+1, {
+        label = "",
+        action = function() end,
+      })
+
+    for _, t in pairs(stopped_threads) do
       local name = t.name or t.id
 
-      table.insert(choices, 1, {
+      table.insert(choices, #choices+1, {
         label = "Resume thread " .. name,
         action = function()
-          if t then
-            session.stopped_thread_id = t.id
-            session:_step('continue')
-          end
+          session.stopped_thread_id = t.id
+          session:_step('continue')
         end
       })
 
