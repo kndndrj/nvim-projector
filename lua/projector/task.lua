@@ -35,14 +35,10 @@ function Task:new(configuration, opts)
       --   status = "",
       -- },
     },
-    outputs = { -- table of outputs per task's capabilities
-      -- task = <>
-      -- debug = <>
-      -- ...
-    },
+    outputs = nil, -- output that's configured per capability
     _callback_success = function() end, -- callback function mainly for handling dependencies
     _callback_problem = function() end, -- callback function mainly for handling dependencies
-    _expand_config_variables = function () end -- function that gets assigned to a task by a loader
+    _expand_config_variables = function() end -- function that gets assigned to a task by a loader
   }
   setmetatable(o, self)
   self.__index = self
@@ -68,25 +64,6 @@ function Task:set_expand_variables(func)
   self._expand_config_variables = func
 end
 
-function Task:configure_outputs()
-  for _, cap in pairs(self.capabilities) do
-    -- create a new output
-    local Output = require 'projector.config'.outputs[cap]
-    local output = Output:new {
-      name = self.meta.name,
-      on_success = function() self._callback_success() end,
-      on_problem = function() self._callback_problem(); print("problem with dependencies") end,
-    }
-
-    if not output then
-      print("Output could not be created")
-      return
-    end
-
-    self.outputs[cap] = output
-  end
-end
-
 -- Run a task and hadle it's dependencies
 function Task:run(cap)
   if not cap then
@@ -95,6 +72,7 @@ function Task:run(cap)
   end
   -- If any output is already live, return
   if self:is_live() then
+    print(self.meta.name .. " already running")
     self._callback_success()
     return
   end
@@ -113,9 +91,23 @@ function Task:run(cap)
     dep.status = ""
   end
 
+  -- create a new output
+  local Output = require 'projector.config'.outputs[cap]
+  local output = Output:new {
+    name = self.meta.name,
+    on_success = function() self._callback_success() end,
+    on_problem = function() self._callback_problem() end,
+  }
+
+  if not output then
+    self._callback_problem()
+    return
+  end
+
+  self.output = output
+
   -- run this task
-  self:configure_outputs()
-  self.outputs[cap]:init(self._expand_config_variables(self.configuration))
+  self.output:init(self._expand_config_variables(self.configuration))
 end
 
 function Task:get_capabilities()
@@ -123,55 +115,49 @@ function Task:get_capabilities()
 end
 
 function Task:is_live()
-  for _, o in pairs(self.outputs) do
-    if o and o.status ~= "inactive" and o.status ~= "" then
-      return true
-    end
+  local o = self.output
+  if o and o.status ~= "inactive" and o.status ~= "" then
+    return true
   end
   return false
 end
 
 function Task:is_active()
-  for _, o in pairs(self.outputs) do
-    if o.status == "active" then
-      return true
-    end
+  local o = self.output
+  if o and o.status == "active" then
+    return true
   end
   return false
 end
 
 function Task:is_hidden()
-  for _, o in pairs(self.outputs) do
-    if o.status == "hidden" then
-      return true
-    end
+  local o = self.output
+  if o and o.status == "hidden" then
+    return true
   end
   return false
 end
 
 function Task:open_output()
-  for _, o in pairs(self.outputs) do
-    if o.status == "hidden" then
-      o:open()
-      return
-    end
+  local o = self.output
+  if o and o.status == "hidden" then
+    o:open()
+    return
   end
 end
 
 function Task:close_output()
-  for _, o in pairs(self.outputs) do
-    if o.status == "active" then
-      o:close()
-      return
-    end
+  local o = self.output
+  if o and o.status == "active" then
+    o:close()
+    return
   end
 end
 
 function Task:list_actions()
-  for _, o in pairs(self.outputs) do
-    if o and o.status ~= "inactive" and o.status ~= "" then
-      return o:list_actions()
-    end
+  local o = self.output
+  if o and o.status ~= "inactive" and o.status ~= "" then
+    return o:list_actions()
   end
 end
 
