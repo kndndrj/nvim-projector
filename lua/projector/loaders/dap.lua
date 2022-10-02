@@ -23,10 +23,10 @@ function DapLoader:load()
 
   for lang, configs in pairs(data) do
     for _, config in pairs(configs) do
-          local task_opts = { capabilities = { "debug" }, scope = "global", lang = lang }
-          local configuration = Configuration:new(config)
-          local task = Task:new(configuration, task_opts)
-          table.insert(tasks, task)
+      local task_opts = { scope = "global", lang = lang }
+      local configuration = Configuration:new(config)
+      local task = Task:new(configuration, task_opts)
+      table.insert(tasks, task)
     end
   end
 

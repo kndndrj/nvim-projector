@@ -15,38 +15,20 @@ function LegacyRcLoader:load()
   -- map with Task objects
   local tasks = {}
 
-  for scope, task_or_debug in pairs(data) do
+  for scope, range in pairs(data) do
 
-    -- debug configurations
-    if task_or_debug.debug then
-      for lang, configs in pairs(task_or_debug.debug) do
+    for _, langs in pairs(range) do
+
+      for lang, configs in pairs(langs) do
         for _, config in pairs(configs) do
 
           config.dependencies = config.depends
-          local task_opts = { capabilities = { "debug" }, scope = scope, lang = lang }
           -- if run_command field exists, add the task capability
           if config.run_command then
-            table.insert(task_opts.capabilities, "task")
             config.command = config.run_command
           end
           local configuration = Configuration:new(config)
-          local task = Task:new(configuration, task_opts)
-          table.insert(tasks, task)
-
-        end
-      end
-    end
-
-    -- task configurations
-    if task_or_debug.tasks then
-      for lang, configs in pairs(task_or_debug.tasks) do
-        for _, config in pairs(configs) do
-
-          -- add type to the configuration
-          config.dependencies = config.depends
-          local task_opts = { capabilities = { "task" }, scope = scope, lang = lang }
-          local configuration = Configuration:new(config)
-          local task = Task:new(configuration, task_opts)
+          local task = Task:new(configuration, { scope = scope, lang = lang })
           table.insert(tasks, task)
 
         end

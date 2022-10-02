@@ -9,13 +9,21 @@ function Task:new(configuration, opts)
   opts = opts or {}
 
   -- capabilities
-  local capabilities = opts.capabilities or {}
-  if type(capabilities) == "string" then
-    capabilities = { capabilities }
+  local capabilities = {}
+  if utils.is_in_table(configuration, { exact = { "command" } }) then
+    table.insert(capabilities, "task")
   end
-  if not capabilities[1] then
-    capabilities = { "task" }
+  if utils.is_in_table(configuration, { exact = { "type", "request", "program" } }) then
+    table.insert(capabilities, "debug")
   end
+  if utils.is_in_table(configuration, { prefixes = { "db" } }) then
+    table.insert(capabilities, "database")
+  end
+  if vim.tbl_isempty(capabilities) then
+    return
+  end
+
+
   local name = configuration.name or "[empty name]"
   local scope = opts.scope or "[empty scope]"
   local lang = opts.lang or "[empty lang]"

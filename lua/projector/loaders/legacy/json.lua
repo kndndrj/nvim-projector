@@ -29,49 +29,37 @@ function LegacyJsonLoader:load(path)
   -- map with Task objects
   local tasks = {}
 
-  -- debug configurations
-  if data.debug then
-    for lang, configs in pairs(data.debug) do
-      for _, config in pairs(configs) do
+  for type, range in pairs(data) do
+    if type == "debug" or type == "tasks" then
 
-        config.dependencies = config.depends
-        local task_opts = { capabilities = { "debug" }, scope = "project", lang = lang }
-        -- if run_command field exists, add the task capability
-        if config.run_command then
-          table.insert(task_opts.capabilities, "task")
-          config.command = config.run_command
+      for lang, configs in pairs(range) do
+        for _, config in pairs(configs) do
+          config.dependencies = config.depends
+          -- if run_command field exists, add the task capability
+          if config.run_command then
+            config.command = config.run_command
+          end
+          local configuration = Configuration:new(config)
+          local task = Task:new(configuration, { scope = "project", lang = lang })
+          table.insert(tasks, task)
         end
-        local configuration = Configuration:new(config)
-        local task = Task:new(configuration, task_opts)
-        table.insert(tasks, task)
-
       end
+
+    elseif type == "database" then
+      range.name = "Database settings"
+      local configuration = Configuration:new(range)
+      local task = Task:new(configuration, { scope = "project", lang = "sql" })
+      table.insert(tasks, task)
     end
   end
 
-  -- task configurations
-  if data.tasks then
-    for lang, configs in pairs(data.tasks) do
-      for _, config in pairs(configs) do
-
-        -- add type to the configuration
-        config.dependencies = config.depends
-        local task_opts = { capabilities = { "task" }, scope = "project", lang = lang }
-        local configuration = Configuration:new(config)
-        local task = Task:new(configuration, task_opts)
-        table.insert(tasks, task)
-
-      end
-    end
-  end
-
-  -- database configurations
-  -- TODO: make this cleaner
-  if data.database then
-    for setting, config in pairs(data.database) do
-      vim.g[setting] = config
-    end
-  end
+  -- -- database configurations
+  -- -- TODO: make this cleaner
+  -- if data.database then
+  --   for setting, config in pairs(data.database) do
+  --     vim.g[setting] = config
+  --   end
+  -- end
 
   return tasks
 end
