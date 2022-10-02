@@ -60,6 +60,11 @@ function Output:close()
   error("not_implemented")
 end
 
+-- function that kills the output (stops the task and deactivates the output)
+function Output:kill()
+  error("not_implemented")
+end
+
 -- Function that shows available actions of the running output
 ---@return Action[]|nil
 function Output:list_actions()

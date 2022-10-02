@@ -1,4 +1,4 @@
-local Output = require'projector.contract.output'
+local Output = require 'projector.contract.output'
 
 ---@type Output
 local BuiltinOutput = Output:new()
@@ -17,7 +17,7 @@ function BuiltinOutput:init(configuration)
     clear_env = false,
     env = configuration.env,
     cwd = configuration.cwd,
-    on_exit = function (_, code)
+    on_exit = function(_, code)
       local ok = true
       if code ~= 0 then ok = false end
       self:done(ok)
@@ -85,6 +85,23 @@ function BuiltinOutput:close()
   self.meta.winid = nil
 
   self.status = "hidden"
+end
+
+function BuiltinOutput:kill()
+  if self.status == "inactive" or self.status == "" then
+    print('Output not active')
+    return
+  end
+
+  if self.meta.winid ~= nil then
+    vim.api.nvim_win_close(self.meta.winid, true)
+  end
+
+  if self.meta.bufnr ~= nil then
+    vim.api.nvim_buf_delete(self.meta.bufnr, { force = true })
+  end
+
+  self.status = "inactive"
 end
 
 ---@return Action[]|nil

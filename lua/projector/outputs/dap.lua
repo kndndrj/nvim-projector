@@ -39,6 +39,16 @@ function DapOutput:close()
   end
 end
 
+function DapOutput:kill()
+  if has_dap then
+    dap.terminate()
+  end
+  if has_dapui then
+    dapui.close()
+  end
+  self.status = "inactive"
+end
+
 ---@return Action[]|nil
 function DapOutput:list_actions()
   if not has_dap then

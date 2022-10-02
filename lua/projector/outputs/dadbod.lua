@@ -13,6 +13,7 @@ function DadbodOutput:init(configuration)
     return
   end
 
+  -- TODO: filter for specific fields (don't set everything as global var)
   for setting, config in pairs(configuration) do
     vim.g[setting] = config
   end
@@ -29,25 +30,12 @@ end
 
 function DadbodOutput:open()
   if has_dadbod_ui then
-    if self.status == "inactive" or self.status == "" then
-      print('Output not active')
-      return
-    elseif self.status == "active" then
-      print('Already open')
-      return
-    end
-
     vim.cmd(":DBUI")
-
-    local bufnr = vim.fn.bufnr()
-    self.meta.bufnr = bufnr
 
     -- Autocommand for current buffer
     vim.api.nvim_create_autocmd({ 'BufDelete', 'BufUnload' },
-      { buffer = bufnr,
+      { buffer = vim.fn.bufnr(),
         callback = function()
-          print("aa")
-          self.meta.bufnr = nil
           self.status = "hidden"
         end })
 
@@ -57,18 +45,13 @@ end
 
 function DadbodOutput:close()
   if has_dadbod_ui then
-    if self.status == "inactive" or self.status == "" then
-      print('Output not active')
-      return
-    elseif self.status == "hidden" then
-      print('Already closed')
-      return
-    end
-
-    vim.api.nvim_buf_delete(self.meta.bufnr, { force = true })
-    self.meta.bufnr = nil
+    vim.cmd('execute "normal \\<Plug>(DBUI_Quit)"')
     self.status = "hidden"
   end
+end
+
+function DadbodOutput:kill()
+  self:close()
 end
 
 ---@return Action[]|nil

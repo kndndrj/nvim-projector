@@ -173,7 +173,6 @@ function Task:open_output()
   local o = self.output
   if o and o.status == "hidden" then
     o:open()
-    return
   end
 end
 
@@ -181,7 +180,13 @@ function Task:close_output()
   local o = self.output
   if o and o.status == "active" then
     o:close()
-    return
+  end
+end
+
+function Task:kill_output()
+  local o = self.output
+  if o then
+    o:kill()
   end
 end
 
