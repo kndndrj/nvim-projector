@@ -1,4 +1,4 @@
-Output = require'projector.contract.output'
+local Output = require'projector.contract.output'
 
 local BuiltinOutput = Output:new()
 

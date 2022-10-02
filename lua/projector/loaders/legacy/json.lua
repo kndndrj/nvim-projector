@@ -53,14 +53,6 @@ function LegacyJsonLoader:load(path)
     end
   end
 
-  -- -- database configurations
-  -- -- TODO: make this cleaner
-  -- if data.database then
-  --   for setting, config in pairs(data.database) do
-  --     vim.g[setting] = config
-  --   end
-  -- end
-
   return tasks
 end
 

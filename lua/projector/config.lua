@@ -16,7 +16,7 @@ local config = {
   outputs = {
     task = require 'projector.outputs.builtin',
     debug = require 'projector.outputs.dap',
-    database = "database",
+    database = require 'projector.outputs.dadbod',
   },
 }
 
