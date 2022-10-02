@@ -10,11 +10,10 @@ function DapOutput:init(configuration)
 
     -- set status to inactive and close outputs on exit
     dap.listeners.before.event_terminated["projector"] = function()
-      self:close()
       self.status = "inactive"
+      self:done(true)
     end
     dap.listeners.before.event_exited["projector"] = function()
-      self:close()
       self.status = "inactive"
     end
 
@@ -42,6 +41,10 @@ function DapOutput:list_actions()
   end
 
   local session = dap.session()
+  if not session then
+    return
+  end
+
   if session.stopped_thread_id then
     return {
       {

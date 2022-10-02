@@ -15,7 +15,7 @@ function Loader:load(path)
 	error("not_implemented")
 end
 
-function Loader:expand_variables()
+function Loader:expand_variables(configuration)
 	error("not_implemented")
 end
 

@@ -40,4 +40,8 @@ function M.status()
   return "not implemented yet"
 end
 
+function M.handler()
+  return handler
+end
+
 return M

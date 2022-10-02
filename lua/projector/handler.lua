@@ -21,13 +21,28 @@ function Handler:load_sources()
     local ts = l:load(loader.path)
     if ts then
       for _, t in pairs(ts) do
+        t:set_expand_variables(function(c) return l:expand_variables(c) end)
         table.insert(tasks, t)
       end
     end
   end
-  -- add to global array
+
+  -- add all tasks to global array
   for _, t in pairs(tasks) do
     self.tasks[t.meta.id] = t
+  end
+
+  -- configure dependencies for tasks
+  -- TODO: prevent dependency cycles
+  for _, t in pairs(self.tasks) do
+    if t.configuration.dependencies then
+      for _, d in pairs(t.configuration.dependencies) do
+        table.insert(t.dependencies, {
+          status = "",
+          task = self.tasks[d],
+        })
+      end
+    end
   end
 end
 

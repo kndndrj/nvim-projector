@@ -5,11 +5,20 @@ local BuiltinOutput = Output:new()
 function BuiltinOutput:init(configuration)
   local name = self.meta.name or 'Builtin'
 
-  local command = configuration.command .. ' "' .. table.concat(configuration.args, '" "') .. '"'
+  local command = configuration.command
+  if configuration.args then
+    command = command .. ' "' .. table.concat(configuration.args, '" "') .. '"'
+  end
+
   local term_options = {
     clear_env = false,
     env = configuration.env,
     cwd = configuration.cwd,
+    on_exit = function (_, code)
+      local ok = true
+      if code ~= 0 then ok = false end
+      self:done(ok)
+    end,
   }
 
   -- open the terminal in a new buffer

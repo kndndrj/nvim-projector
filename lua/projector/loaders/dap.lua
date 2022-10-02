@@ -2,13 +2,13 @@ local Task = require 'projector.task'
 local Configuration = require 'projector.contract.configuration'
 local Loader = require 'projector.contract.loader'
 
+local DapLoader = Loader:new("dap")
+
 -- just to avoid "not_implemented" error
 -- dap handles variables itself
-function Configuration:expand_variables()
-  return self
+function DapLoader:expand_variables(configuration)
+  return configuration
 end
-
-local DapLoader = Loader:new("dap")
 
 function DapLoader:load()
   local has_dap, dap = pcall(require, "dap")
@@ -21,9 +21,9 @@ function DapLoader:load()
   -- map with Task objects
   local tasks = {}
 
-  for _, configs in pairs(data) do
+  for lang, configs in pairs(data) do
     for _, config in pairs(configs) do
-          local task_opts = { capabilities = { "debug" }, scope = "global" }
+          local task_opts = { capabilities = { "debug" }, scope = "global", lang = lang }
           local configuration = Configuration:new(config)
           local task = Task:new(configuration, task_opts)
           table.insert(tasks, task)

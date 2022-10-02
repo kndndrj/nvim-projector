@@ -9,8 +9,4 @@ function Configuration:new(opts)
   return o
 end
 
-function Configuration:expand_variables()
-  error("not_implemented")
-end
-
 return Configuration
