@@ -10,7 +10,7 @@ local DapOutput = Output:new()
 ---@diagnostic disable-next-line: unused-local
 function DapOutput:init(configuration)
   if has_dap then
-    self.status = "active"
+    self.status = "visible"
 
     -- set status to inactive and close outputs on exit
     dap.listeners.before.event_terminated["projector"] = function()
@@ -28,7 +28,7 @@ end
 function DapOutput:open()
   if has_dapui then
     dapui.open()
-    self.status = "active"
+    self.status = "visible"
   end
 end
 

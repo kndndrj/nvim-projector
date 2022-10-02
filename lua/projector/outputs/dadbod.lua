@@ -39,7 +39,7 @@ function DadbodOutput:open()
           self.status = "hidden"
         end })
 
-    self.status = "active"
+    self.status = "visible"
   end
 end
 

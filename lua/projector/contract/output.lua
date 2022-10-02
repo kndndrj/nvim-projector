@@ -1,6 +1,6 @@
 ---@class Output
 ---@field meta { [string]: any } Table that holds output's metadata
----@field status "inactive"|"hidden"|"active" Status of the output (hidden or active)
+---@field status "inactive"|"hidden"|"visible" Status of the output
 ---@field _callback_success fun() Anonymous callback function on successful output completion
 ---@field _callback_problem fun() Anonymous callback function on problematic output completion
 local Output = {}

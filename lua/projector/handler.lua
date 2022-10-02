@@ -1,12 +1,14 @@
 local utils = require 'projector.utils'
 
 ---@class Handler
----@field tasks Task[]
+---@field tasks { [string]: Task }
+---@field index string id of the current task
 local Handler = {}
 
 function Handler:new()
   local o = {
-    tasks = {}
+    tasks = {},
+    index = nil,
   }
   setmetatable(o, self)
   self.__index = self
@@ -49,28 +51,28 @@ function Handler:load_sources()
   end
 end
 
--- Get tasks that are currently live (hidden or active)
----@return Task[]
+-- Get tasks that are currently live (hidden or visible)
+---@return { [string]: Task }
 function Handler:live_tasks()
   local live = {}
   for _, t in pairs(self.tasks) do
     if t:is_live() then
-      table.insert(live, t)
+      live[t.meta.id] = t
     end
   end
   return live
 end
 
--- Get tasks that are currently active
----@return Task[]
-function Handler:active_tasks()
-  local active = {}
+-- Get tasks that are currently visible
+---@return { [string]: Task }
+function Handler:visible_tasks()
+  local visible = {}
   for _, t in pairs(self.tasks) do
-    if t:is_active() then
-      table.insert(active, t)
+    if t:is_visible() then
+      visible[t.meta.id] = t
     end
   end
-  return active
+  return visible
 end
 
 -- Get tasks that are currently hidden
@@ -79,7 +81,7 @@ function Handler:hidden_tasks()
   local hidden = {}
   for _, t in pairs(self.tasks) do
     if t:is_hidden() then
-      table.insert(hidden, t)
+      hidden[t.meta.id] = t
     end
   end
   return hidden
@@ -103,6 +105,11 @@ function Handler:select_and_run()
       if choice then
         local caps = choice:get_capabilities()
         if #caps == 1 then
+          -- hide all other visible tasks and open this one
+          for _, t in pairs(self:visible_tasks()) do
+            t:close_output()
+          end
+          self.index = choice.meta.id
           choice:run(caps[1])
         elseif #caps > 1 then
 
@@ -116,6 +123,11 @@ function Handler:select_and_run()
             },
             function(c)
               if c then
+                -- hide all other visible tasks and open this one
+                for _, t in pairs(self:visible_tasks()) do
+                  t:close_output()
+                end
+                self.index = choice.meta.id
                 choice:run(c)
               end
             end
@@ -127,7 +139,7 @@ function Handler:select_and_run()
   )
 end
 
--- Start new tasks, interact with active ones.
+-- Start new tasks, interact with live ones.
 -- Acts as an entrypoint to the program
 function Handler:continue()
   local live_tasks = self:live_tasks()
@@ -137,7 +149,7 @@ function Handler:continue()
     return
   end
 
-  -- get actions from all active tasks
+  -- get actions from all live tasks
   local actions = {}
   for _, t in pairs(live_tasks) do
     local t_actions = t:list_actions()
@@ -186,23 +198,81 @@ function Handler:continue()
   )
 end
 
--- Toggle an active output or select which one to show
-function Handler:toggle_output()
-  local hidden_tasks = self:hidden_tasks()
-  local active_tasks = self:active_tasks()
+-- Jump to previous task
+function Handler:next_output()
 
-  if #hidden_tasks == 1 and #active_tasks == 0 then
+  local i = 0
+  while i <= #vim.tbl_keys(self.tasks) do
+    self.index = next(self.tasks, self.index)
+
+    if self.index and self.tasks[self.index]:is_live() then
+      break
+    end
+    i = i + 1
+  end
+
+  if not self.index then
+    return
+  end
+
+  -- close all visible tasks
+  for _, t in pairs(self:visible_tasks()) do
+    t:close_output()
+  end
+
+  -- and open only this one
+  self.tasks[self.index]:open_output()
+end
+
+function Handler:previous_output()
+
+  ---@type { [string]: any }
+  local reverse_ids = {}
+  for id, _ in pairs(self.tasks) do
+    reverse_ids[id] = true
+  end
+
+  local i = 0
+  while i <= #vim.tbl_keys(self.tasks) do
+    self.index = next(reverse_ids, self.index)
+
+    if self.index and self.tasks[self.index]:is_live() then
+      break
+    end
+    i = i + 1
+  end
+
+  if not self.index then
+    return
+  end
+
+  -- close all visible tasks
+  for _, t in pairs(self:visible_tasks()) do
+    t:close_output()
+  end
+
+  -- and open only this one
+  self.tasks[self.index]:open_output()
+end
+
+-- Toggle a live output or select which one to show
+-- TODO: remove in the future (new functionality)
+function Handler:toggle_output()
+  local hidden = self:hidden_tasks()
+  local visible = self:visible_tasks()
+
+  if #vim.tbl_keys(hidden) == 1 and #vim.tbl_keys(visible) == 0 then
     -- open the only hidden element
-    hidden_tasks[1]:open_output()
+    hidden[next(hidden)]:open_output()
     return
-  elseif #hidden_tasks == 0 and #active_tasks == 1 then
-    -- close the only active element
-    active_tasks[1]:close_output()
+  elseif #vim.tbl_keys(hidden) == 0 and #vim.tbl_keys(visible) == 1 then
+    -- close the only visible element
+    visible[next(visible)]:close_output()
     return
-  elseif #hidden_tasks > 0 then
+  elseif #vim.tbl_keys(hidden) > 0 then
     -- select a hidden task to open
     vim.ui.select(
-      hidden_tasks,
+      utils.expand_table(hidden),
       {
         prompt = 'select a hidden task to open:',
         format_item = function(item)

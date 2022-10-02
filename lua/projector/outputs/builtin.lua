@@ -33,7 +33,7 @@ function BuiltinOutput:init(configuration)
   local winid = vim.fn.win_getid()
   self.meta.winid = winid
 
-  self.status = "active"
+  self.status = "visible"
 
   -- Rename the buffer
   vim.api.nvim_command('file ' .. name .. ' ' .. bufnr)
@@ -57,9 +57,9 @@ end
 
 function BuiltinOutput:open()
   if self.status == "inactive" or self.status == "" then
-    print('Output not active')
+    print('Output not live')
     return
-  elseif self.status == "active" then
+  elseif self.status == "visible" then
     print('Already open')
     return
   end
@@ -69,12 +69,12 @@ function BuiltinOutput:open()
   self.meta.winid = vim.fn.win_getid()
   vim.api.nvim_command('b ' .. self.meta.bufnr)
 
-  self.status = "active"
+  self.status = "visible"
 end
 
 function BuiltinOutput:close()
   if self.status == "inactive" or self.status == "" then
-    print('Output not active')
+    print('Output not live')
     return
   elseif self.status == "hidden" then
     print('Already closed')
@@ -89,7 +89,7 @@ end
 
 function BuiltinOutput:kill()
   if self.status == "inactive" or self.status == "" then
-    print('Output not active')
+    print('Output not live')
     return
   end
 

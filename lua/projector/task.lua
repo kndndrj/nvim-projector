@@ -153,9 +153,9 @@ function Task:is_live()
   return false
 end
 
-function Task:is_active()
+function Task:is_visible()
   local o = self.output
-  if o and o.status == "active" then
+  if o and o.status == "visible" then
     return true
   end
   return false
@@ -178,7 +178,7 @@ end
 
 function Task:close_output()
   local o = self.output
-  if o and o.status == "active" then
+  if o and o.status == "visible" then
     o:close()
   end
 end
