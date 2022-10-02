@@ -1,14 +1,11 @@
 local Task = require 'projector.task'
-local Configuration = require 'projector.contract.configuration'
 local Loader = require 'projector.contract.loader'
 local common = require 'projector.loaders.legacy.common'
 
+---@type Loader
 local LegacyRcLoader = Loader:new("legacy-rc")
 
-function LegacyRcLoader:expand_variables(configuration)
-  return vim.tbl_map(common.expand_config_variables, configuration)
-end
-
+---@return Task[]|nil
 function LegacyRcLoader:load()
   local data = require 'projector'.configurations
 
@@ -27,8 +24,7 @@ function LegacyRcLoader:load()
           if config.run_command then
             config.command = config.run_command
           end
-          local configuration = Configuration:new(config)
-          local task = Task:new(configuration, { scope = scope, lang = lang })
+          local task = Task:new(config, { scope = scope, lang = lang })
           table.insert(tasks, task)
 
         end
@@ -38,6 +34,12 @@ function LegacyRcLoader:load()
   end
 
   return tasks
+end
+
+---@param configuration Configuration
+---@return Configuration
+function LegacyRcLoader:expand_variables(configuration)
+  return vim.tbl_map(common.expand_config_variables, configuration)
 end
 
 return LegacyRcLoader

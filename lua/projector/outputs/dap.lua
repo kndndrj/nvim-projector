@@ -1,9 +1,13 @@
 local Output = require 'projector.contract.output'
 local has_dap, dap = pcall(require, 'dap')
 local has_dapui, dapui = pcall(require, 'dapui')
+---@cast dap -Loader
 
+---@type Output
 local DapOutput = Output:new()
 
+---@param configuration Configuration
+---@diagnostic disable-next-line: unused-local
 function DapOutput:init(configuration)
   if has_dap then
     self.status = "active"
@@ -35,6 +39,7 @@ function DapOutput:close()
   end
 end
 
+---@return Action[]|nil
 function DapOutput:list_actions()
   if not has_dap then
     return

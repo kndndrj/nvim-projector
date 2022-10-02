@@ -1,5 +1,6 @@
 local Handler = require'projector.handler'
 
+---@type Handler
 local handler = Handler:new()
 
 local M = {}
@@ -18,8 +19,7 @@ M.configurations = {
 }
 
 -- setup function
--- args:
---   config: config-like table (projector.cofig)
+---@param config table config-like table (projector.cofig)
 function M.setup(config)
   handler:load_sources()
 end

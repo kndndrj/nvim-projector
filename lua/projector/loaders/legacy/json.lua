@@ -1,14 +1,12 @@
 local Task = require 'projector.task'
-local Configuration = require 'projector.contract.configuration'
 local Loader = require 'projector.contract.loader'
 local common = require 'projector.loaders.legacy.common'
 
+---@type Loader
 local LegacyJsonLoader = Loader:new("legacy-json")
 
-function LegacyJsonLoader:expand_variables(configuration)
-  return vim.tbl_map(common.expand_config_variables, configuration)
-end
-
+---@param path string
+---@return Task[]|nil
 function LegacyJsonLoader:load(path)
   path = path or (vim.fn.getcwd() .. '/.vim/projector.json')
 
@@ -39,21 +37,26 @@ function LegacyJsonLoader:load(path)
           if config.run_command then
             config.command = config.run_command
           end
-          local configuration = Configuration:new(config)
-          local task = Task:new(configuration, { scope = "project", lang = lang })
+          local task = Task:new(config, { scope = "project", lang = lang })
           table.insert(tasks, task)
         end
       end
 
     elseif type == "database" then
-      range.name = "Database settings"
-      local configuration = Configuration:new(range)
-      local task = Task:new(configuration, { scope = "project", lang = "sql" })
+      local config = range
+      config.name = "Database settings"
+      local task = Task:new(config, { scope = "project", lang = "sql" })
       table.insert(tasks, task)
     end
   end
 
   return tasks
+end
+
+---@param configuration Configuration
+---@return Configuration
+function LegacyJsonLoader:expand_variables(configuration)
+  return vim.tbl_map(common.expand_config_variables, configuration)
 end
 
 return LegacyJsonLoader

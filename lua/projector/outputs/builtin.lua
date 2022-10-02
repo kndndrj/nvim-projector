@@ -1,7 +1,10 @@
 local Output = require'projector.contract.output'
 
+---@type Output
 local BuiltinOutput = Output:new()
 
+---@param configuration Configuration
+---@diagnostic disable-next-line: unused-local
 function BuiltinOutput:init(configuration)
   local name = self.meta.name or 'Builtin'
 
@@ -84,6 +87,7 @@ function BuiltinOutput:close()
   self.status = "hidden"
 end
 
+---@return Action[]|nil
 function BuiltinOutput:list_actions()
 end
 

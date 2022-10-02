@@ -1,3 +1,8 @@
+---@class Output
+---@field meta { [string]: any } Table that holds output's metadata
+---@field status "inactive"|"hidden"|"active" Status of the output (hidden or active)
+---@field _callback_success fun() Anonymous callback function on successful output completion
+---@field _callback_problem fun() Anonymous callback function on problematic output completion
 local Output = {}
 
 function Output:new(opts)
@@ -14,13 +19,12 @@ function Output:new(opts)
   end
 
   local o = {
-    meta = { -- this table holds output's metadata - fields provided here are set in all outputs
+    meta = {
       name = opts.name or "[empty output name]",
     },
-    status = "inactive", -- status of the output (hidden or active)
-
-    _callback_success = on_success, -- callback function - DO NOT OVERWRITE
-    _callback_problem = on_problem, -- callback function - DO NOT OVERWRITE
+    status = "inactive",
+    _callback_success = on_success,
+    _callback_problem = on_problem,
   }
   setmetatable(o, self)
   self.__index = self
@@ -40,6 +44,8 @@ function Output:done(ok)
 end
 
 -- Function that initializes the output (runs the command)
+---@param configuration Configuration
+---@diagnostic disable-next-line: unused-local
 function Output:init(configuration)
   error("not_implemented")
 end
@@ -55,6 +61,7 @@ function Output:close()
 end
 
 -- Function that shows available actions of the running output
+---@return Action[]|nil
 function Output:list_actions()
   error("not_implemented")
 end

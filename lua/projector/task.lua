@@ -1,7 +1,28 @@
+-- Table of configuration parameters
+---@alias Configuration table<string, any>
+
+-- Table of actions
+---@alias Action { label: string, action: fun(), override: boolean } table of actions
+
+-- What modes can the task run in
+---@alias Capability "task"|"debug"|"database"
+
+
 local utils = require 'projector.utils'
 
+
+---@class Task
+---@field meta { id: string, name: string, scope: string, lang: string } id, name, scope (project or global), lang (language group)
+---@field capabilities Capability[] What can the task do (debug, task)
+---@field configuration Configuration Configuration of the task (command, args, env, cwd...)
+---@field dependencies { task: Task, status: "done"|"error"|"" } List of dependent tasks
+---@field output Output Output that's configured per capability
+---@filed _callback_success fun() Callback function mainly for handling dependencies
+---@filed _callback_problem fun() Callback function mainly for handling dependencies
+---@filed _expand_config_variables fun(configuration: Configuration): Configuration Function that gets assigned to a task by a loader
 local Task = {}
 
+---@param configuration Configuration
 function Task:new(configuration, opts)
   if not configuration then
     return
@@ -13,7 +34,7 @@ function Task:new(configuration, opts)
   if utils.is_in_table(configuration, { exact = { "command" } }) then
     table.insert(capabilities, "task")
   end
-  if utils.is_in_table(configuration, { exact = { "type", "request", "program" } }) then
+  if utils.is_in_table(configuration, { exact = { "type", "request" } }) then
     table.insert(capabilities, "debug")
   end
   if utils.is_in_table(configuration, { prefixes = { "db" } }) then
@@ -32,27 +53,24 @@ function Task:new(configuration, opts)
     meta = {
       id = scope .. "." .. lang .. "." .. name or utils.generate_table_id(configuration),
       name = name,
-      scope = scope, -- source of task (global or project)
-      lang = lang, -- language group (go, python, lua...)
+      scope = scope,
+      lang = lang,
     },
-    capabilities = capabilities, -- what can the task do (debug, task)
-    configuration = configuration, --configuration of the task (command, args, env, cwd...)
-    dependencies = { -- list of dependent tasks
-      -- {
-      --   task = <>,
-      --   status = "",
-      -- },
-    },
-    outputs = nil, -- output that's configured per capability
-    _callback_success = function() end, -- callback function mainly for handling dependencies
-    _callback_problem = function() end, -- callback function mainly for handling dependencies
-    _expand_config_variables = function() end -- function that gets assigned to a task by a loader
+    capabilities = capabilities,
+    configuration = configuration,
+    dependencies = {},
+    output = nil,
+    _callback_success = function() end,
+    _callback_problem = function() end,
+    _expand_config_variables = function() end
   }
   setmetatable(o, self)
   self.__index = self
   return o
 end
 
+-- Set a success callback function
+---@param func fun()
 function Task:set_callback_success(func)
   self._callback_success = function()
     func()
@@ -60,6 +78,8 @@ function Task:set_callback_success(func)
   end
 end
 
+-- Set a problem callback function
+---@param func fun()
 function Task:set_callback_problem(func)
   self._callback_problem = function()
     func()
@@ -67,12 +87,14 @@ function Task:set_callback_problem(func)
   end
 end
 
----@param func function(config: table): table
+-- Set a function for expanding config variables
+---@param func function(config: Configuration): Configuration
 function Task:set_expand_variables(func)
   self._expand_config_variables = func
 end
 
 -- Run a task and hadle it's dependencies
+---@param cap Capability
 function Task:run(cap)
   if not cap then
     self._callback_problem()
@@ -118,6 +140,7 @@ function Task:run(cap)
   self.output:init(self._expand_config_variables(self.configuration))
 end
 
+---@return Capability[]
 function Task:get_capabilities()
   return self.capabilities
 end
@@ -162,6 +185,7 @@ function Task:close_output()
   end
 end
 
+---@return Action[]|nil
 function Task:list_actions()
   local o = self.output
   if o and o.status ~= "inactive" and o.status ~= "" then

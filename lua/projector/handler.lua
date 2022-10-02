@@ -1,5 +1,7 @@
 local utils = require 'projector.utils'
 
+---@class Handler
+---@field tasks Task[]
 local Handler = {}
 
 function Handler:new()
@@ -11,6 +13,7 @@ function Handler:new()
   return o
 end
 
+-- Load tasks from all loaders
 function Handler:load_sources()
   local config = require 'projector.config'
 
@@ -46,6 +49,8 @@ function Handler:load_sources()
   end
 end
 
+-- Get tasks that are currently live (hidden or active)
+---@return Task[]
 function Handler:live_tasks()
   local live = {}
   for _, t in pairs(self.tasks) do
@@ -56,6 +61,8 @@ function Handler:live_tasks()
   return live
 end
 
+-- Get tasks that are currently active
+---@return Task[]
 function Handler:active_tasks()
   local active = {}
   for _, t in pairs(self.tasks) do
@@ -66,6 +73,8 @@ function Handler:active_tasks()
   return active
 end
 
+-- Get tasks that are currently hidden
+---@return Task[]
 function Handler:hidden_tasks()
   local hidden = {}
   for _, t in pairs(self.tasks) do
@@ -76,6 +85,7 @@ function Handler:hidden_tasks()
   return hidden
 end
 
+-- Select a task and it's capability and run it
 function Handler:select_and_run()
   if vim.tbl_isempty(self.tasks) then
     print("no tasks configured")
@@ -117,6 +127,8 @@ function Handler:select_and_run()
   )
 end
 
+-- Start new tasks, interact with active ones.
+-- Acts as an entrypoint to the program
 function Handler:continue()
   local live_tasks = self:live_tasks()
 
@@ -174,6 +186,7 @@ function Handler:continue()
   )
 end
 
+-- Toggle an active output or select which one to show
 function Handler:toggle_output()
   local hidden_tasks = self:hidden_tasks()
   local active_tasks = self:active_tasks()
