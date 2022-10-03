@@ -198,7 +198,7 @@ function Handler:continue()
   )
 end
 
--- Jump to previous task
+-- Jump to next task's output
 function Handler:next_output()
 
   local i = 0
@@ -224,6 +224,8 @@ function Handler:next_output()
   self.tasks[self.index]:open_output()
 end
 
+-- Jump to previous task's output
+-- TODO: not working as expected
 function Handler:previous_output()
 
   ---@type { [string]: any }
@@ -255,36 +257,27 @@ function Handler:previous_output()
   self.tasks[self.index]:open_output()
 end
 
--- Toggle a live output or select which one to show
--- TODO: remove in the future (new functionality)
+-- Toggle the current output or jump to next one if this one died
 function Handler:toggle_output()
-  local hidden = self:hidden_tasks()
   local visible = self:visible_tasks()
+  local hidden = self:hidden_tasks()
 
-  if #vim.tbl_keys(hidden) == 1 and #vim.tbl_keys(visible) == 0 then
-    -- open the only hidden element
-    hidden[next(hidden)]:open_output()
+  -- if any outputs are visible, close them
+  if #vim.tbl_keys(visible) > 0 then
+    for _, t in pairs(visible) do
+      t:close_output()
+    end
     return
-  elseif #vim.tbl_keys(hidden) == 0 and #vim.tbl_keys(visible) == 1 then
-    -- close the only visible element
-    visible[next(visible)]:close_output()
-    return
-  elseif #vim.tbl_keys(hidden) > 0 then
-    -- select a hidden task to open
-    vim.ui.select(
-      utils.expand_table(hidden),
-      {
-        prompt = 'select a hidden task to open:',
-        format_item = function(item)
-          return item.meta.name
-        end,
-      },
-      function(choice)
-        if choice then
-          choice:open_output()
-        end
-      end
-    )
+  end
+
+  -- If there are any hidden outputs, show the current one,
+  -- if the current one isn't live, select the next one
+  if #vim.tbl_keys(hidden) > 0 and self.index ~= nil then
+    if self.tasks[self.index]:is_live() then
+      self.tasks[self.index]:open_output()
+      return
+    end
+    self:next_output()
     return
   end
 

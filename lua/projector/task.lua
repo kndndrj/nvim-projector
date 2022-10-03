@@ -95,42 +95,56 @@ end
 
 -- Run a task and hadle it's dependencies
 ---@param cap Capability
-function Task:run(cap)
+---@param on_success? fun()
+---@param on_problem? fun()
+function Task:run(cap, on_success, on_problem)
+  -- check parameters
+  if not on_success then
+    on_success = function() end
+  end
+  if not on_problem then
+    on_problem = function() end
+  end
   if not cap then
-    self._callback_problem()
+    on_problem()
     return
   end
+
   -- If any output is already live, return
   if self:is_live() then
     print(self.meta.name .. " already running")
-    self._callback_success()
+    on_success()
     return
+  end
+
+  local revert_dep_statuses = function()
+    for _, dep in pairs(self.dependencies) do
+      dep.status = ""
+    end
   end
 
   -- run the first not completed dependency
   for _, dep in pairs(self.dependencies) do
     if dep.status ~= "done" and dep.status ~= "error" then
-      dep.task:set_callback_success(function() dep.status = "done"; self:run(cap) end)
-      dep.task:set_callback_problem(function() dep.status = "error"; print("error running deps for: " .. self.meta.id) end)
-      dep.task:run("task")
+      local callback_success = function() dep.status = "done"; self:run(cap, on_success, on_problem) end
+      local callback_problem = function() dep.status = "error"; print("error running deps for: " .. self.meta.id); on_problem(); revert_dep_statuses() end
+      dep.task:run("task", callback_success, callback_problem)
       return
     end
   end
-  -- revert dependency statuses
-  for _, dep in pairs(self.dependencies) do
-    dep.status = ""
-  end
+  -- revert dependency statuses if all dependencies are successfully finished
+  revert_dep_statuses()
 
   -- create a new output
   local Output = require 'projector.config'.outputs[cap]
   local output = Output:new {
     name = self.meta.name,
-    on_success = function() self._callback_success() end,
-    on_problem = function() self._callback_problem() end,
+    on_success = on_success,
+    on_problem = on_problem,
   }
 
   if not output then
-    self._callback_problem()
+    on_problem()
     return
   end
 

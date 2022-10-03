@@ -32,8 +32,22 @@ function M.continue()
   handler:continue()
 end
 
+function M.next()
+  handler:next_output()
+end
+
+function M.previous()
+  handler:previous_output()
+end
+
+function M.toggle()
+  handler:toggle_output()
+end
+
+---@deprecated
 function M.toggle_output()
   handler:toggle_output()
+  print("projector.toggle_output() is deprecated. Use projector.toggle() instead")
 end
 
 function M.status()
