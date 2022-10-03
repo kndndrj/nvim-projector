@@ -252,7 +252,6 @@ function Handler:next_output()
 end
 
 -- Jump to previous task's output
--- TODO: not working as expected
 function Handler:previous_output()
 
   local i = self.id_lookup_reverse[self.id_current] or #self.id_lookup + 1

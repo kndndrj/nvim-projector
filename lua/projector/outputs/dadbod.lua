@@ -15,7 +15,11 @@ function DadbodOutput:init(configuration)
 
   -- TODO: filter for specific fields (don't set everything as global var)
   for setting, config in pairs(configuration) do
-    vim.g[setting] = config
+    if setting == "databases" then
+      vim.g["dbs"] = config
+    elseif setting == "queries" then
+      vim.g["db_ui_table_helpers"] = config
+    end
   end
 
   if has_dadbod_ui then

@@ -29,13 +29,13 @@ function Task:new(configuration, opts)
 
   -- capabilities
   local capabilities = {}
-  if utils.is_in_table(configuration, { exact = { "command" } }) then
+  if utils.is_in_table(configuration, { "command" }) then
     table.insert(capabilities, "task")
   end
-  if utils.is_in_table(configuration, { exact = { "type", "request" } }) then
+  if utils.is_in_table(configuration, { "type", "request" }) then
     table.insert(capabilities, "debug")
   end
-  if utils.is_in_table(configuration, { prefixes = { "db" } }) then
+  if utils.is_in_table(configuration, { "databases" }) or utils.is_in_table(configuration, { "queries" }) then
     table.insert(capabilities, "database")
   end
   if vim.tbl_isempty(capabilities) then
