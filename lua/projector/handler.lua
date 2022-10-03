@@ -2,13 +2,17 @@ local utils = require 'projector.utils'
 
 ---@class Handler
 ---@field tasks { [string]: Task }
----@field index string id of the current task
+---@field id_current string id of the current task
+---@field id_lookup_reverse { [string]: integer } reverse lookup of task ids in order
+---@field id_lookup string[] reverse lookup of task ids in order
 local Handler = {}
 
 function Handler:new()
   local o = {
     tasks = {},
-    index = nil,
+    id_current = nil,
+    id_lookup = {},
+    id_lookup_reverse = {},
   }
   setmetatable(o, self)
   self.__index = self
@@ -32,9 +36,18 @@ function Handler:load_sources()
     end
   end
 
-  -- add all tasks to global array
+  -- add all tasks to tasks table
+  -- and create a task id lookup table
+  local ids = {}
   for _, t in pairs(tasks) do
     self.tasks[t.meta.id] = t
+    table.insert(ids, t.meta.id)
+  end
+  -- sort the lookup table alphanumerically
+  ---@type string[]
+  self.id_lookup = utils.alphanumsort(ids)
+  for i, v in ipairs(self.id_lookup) do
+    self.id_lookup_reverse[v] = i
   end
 
   -- configure dependencies for tasks
@@ -94,23 +107,24 @@ function Handler:select_and_run()
     return
   end
   vim.ui.select(
-    utils.expand_table(self.tasks),
+    self.id_lookup,
     {
       prompt = 'select a job:',
       format_item = function(item)
-        return item.meta.name
+        return self.tasks[item].meta.name
       end,
     },
+    ---@param choice string
     function(choice)
       if choice then
-        local caps = choice:get_capabilities()
+        local caps = self.tasks[choice]:get_capabilities()
         if #caps == 1 then
           -- hide all other visible tasks and open this one
           for _, t in pairs(self:visible_tasks()) do
             t:close_output()
           end
-          self.index = choice.meta.id
-          choice:run(caps[1])
+          self.id_current = choice
+          self.tasks[choice]:run(caps[1])
         elseif #caps > 1 then
 
           vim.ui.select(
@@ -121,14 +135,15 @@ function Handler:select_and_run()
                 return item
               end,
             },
+            ---@param c Capability
             function(c)
               if c then
                 -- hide all other visible tasks and open this one
                 for _, t in pairs(self:visible_tasks()) do
                   t:close_output()
                 end
-                self.index = choice.meta.id
-                choice:run(c)
+                self.id_current = choice
+                self.tasks[choice]:run(c)
               end
             end
           )
@@ -201,17 +216,26 @@ end
 -- Jump to next task's output
 function Handler:next_output()
 
-  local i = 0
-  while i <= #vim.tbl_keys(self.tasks) do
-    self.index = next(self.tasks, self.index)
+  local i = self.id_lookup_reverse[self.id_current] or 0
+  local id = nil
 
-    if self.index and self.tasks[self.index]:is_live() then
+  for _ = 1, #self.id_lookup do
+
+    if i >= #self.id_lookup then
+      i = 0
+    end
+
+    id = self.id_lookup[i + 1]
+
+    if self.tasks[id]:is_live() then
+      self.id_current = id
       break
     end
+
     i = i + 1
   end
 
-  if not self.index then
+  if not self.id_current then
     return
   end
 
@@ -221,30 +245,33 @@ function Handler:next_output()
   end
 
   -- and open only this one
-  self.tasks[self.index]:open_output()
+  self.tasks[self.id_current]:open_output()
 end
 
 -- Jump to previous task's output
 -- TODO: not working as expected
 function Handler:previous_output()
 
-  ---@type { [string]: any }
-  local reverse_ids = {}
-  for id, _ in pairs(self.tasks) do
-    reverse_ids[id] = true
-  end
+  local i = self.id_lookup_reverse[self.id_current] or #self.id_lookup + 1
+  local id = nil
 
-  local i = 0
-  while i <= #vim.tbl_keys(self.tasks) do
-    self.index = next(reverse_ids, self.index)
+  for _ = 1, #self.id_lookup do
 
-    if self.index and self.tasks[self.index]:is_live() then
+    if i <= 1 then
+      i = #self.id_lookup + 1
+    end
+
+    id = self.id_lookup[i - 1]
+
+    if self.tasks[id]:is_live() then
+      self.id_current = id
       break
     end
-    i = i + 1
+
+    i = i - 1
   end
 
-  if not self.index then
+  if not self.id_current then
     return
   end
 
@@ -254,7 +281,7 @@ function Handler:previous_output()
   end
 
   -- and open only this one
-  self.tasks[self.index]:open_output()
+  self.tasks[self.id_current]:open_output()
 end
 
 -- Toggle the current output or jump to next one if this one died
@@ -272,9 +299,9 @@ function Handler:toggle_output()
 
   -- If there are any hidden outputs, show the current one,
   -- if the current one isn't live, select the next one
-  if #vim.tbl_keys(hidden) > 0 and self.index ~= nil then
-    if self.tasks[self.index]:is_live() then
-      self.tasks[self.index]:open_output()
+  if #vim.tbl_keys(hidden) > 0 and self.id_current ~= nil then
+    if self.tasks[self.id_current]:is_live() then
+      self.tasks[self.id_current]:open_output()
       return
     end
     self:next_output()

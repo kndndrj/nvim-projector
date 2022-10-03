@@ -15,10 +15,8 @@ local utils = require 'projector.utils'
 ---@field meta { id: string, name: string, scope: string, lang: string } id, name, scope (project or global), lang (language group)
 ---@field capabilities Capability[] What can the task do (debug, task)
 ---@field configuration Configuration Configuration of the task (command, args, env, cwd...)
----@field dependencies { task: Task, status: "done"|"error"|"" } List of dependent tasks
+---@field dependencies { task: Task, status: "done"|"error"|"" }[] List of dependent tasks
 ---@field output Output Output that's configured per capability
----@filed _callback_success fun() Callback function mainly for handling dependencies
----@filed _callback_problem fun() Callback function mainly for handling dependencies
 ---@filed _expand_config_variables fun(configuration: Configuration): Configuration Function that gets assigned to a task by a loader
 local Task = {}
 
@@ -44,14 +42,13 @@ function Task:new(configuration, opts)
     return
   end
 
-
   local name = configuration.name or "[empty name]"
   local scope = opts.scope or "[empty scope]"
   local lang = opts.lang or "[empty lang]"
 
   local o = {
     meta = {
-      id = scope .. "." .. lang .. "." .. name or utils.generate_table_id(configuration),
+      id = scope .. "." .. lang .. "." .. name,
       name = name,
       scope = scope,
       lang = lang,
@@ -60,31 +57,11 @@ function Task:new(configuration, opts)
     configuration = configuration,
     dependencies = {},
     output = nil,
-    _callback_success = function() end,
-    _callback_problem = function() end,
     _expand_config_variables = function() end
   }
   setmetatable(o, self)
   self.__index = self
   return o
-end
-
--- Set a success callback function
----@param func fun()
-function Task:set_callback_success(func)
-  self._callback_success = function()
-    func()
-    self._callback_success = function() end
-  end
-end
-
--- Set a problem callback function
----@param func fun()
-function Task:set_callback_problem(func)
-  self._callback_problem = function()
-    func()
-    self._callback_problem = function() end
-  end
 end
 
 -- Set a function for expanding config variables
@@ -126,7 +103,7 @@ function Task:run(cap, on_success, on_problem)
   -- run the first not completed dependency
   for _, dep in pairs(self.dependencies) do
     if dep.status ~= "done" and dep.status ~= "error" then
-      local callback_success = function() dep.status = "done"; self:run(cap, on_success, on_problem) end
+      local callback_success = function() dep.status = "done"; dep.task:kill_output() self:run(cap, on_success, on_problem) end
       local callback_problem = function() dep.status = "error"; print("error running deps for: " .. self.meta.id); on_problem(); revert_dep_statuses() end
       dep.task:run("task", callback_success, callback_problem)
       return
