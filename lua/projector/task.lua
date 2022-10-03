@@ -42,6 +42,7 @@ function Task:new(configuration, opts)
     return
   end
 
+  -- metadata
   local name = configuration.name or "[empty name]"
   local scope = opts.scope or "[empty scope]"
   local lang = opts.lang or "[empty lang]"
@@ -113,7 +114,16 @@ function Task:run(cap, on_success, on_problem)
   revert_dep_statuses()
 
   -- create a new output
-  local Output = require 'projector.config'.outputs[cap]
+  local o = require 'projector'.config.outputs
+  ---@type boolean, Output
+  local ok, Output = pcall(require, 'projector.outputs.' .. o[cap])
+  if not ok then
+    print('output for ' .. cap .. ' could not be created')
+    on_problem()
+    return
+  end
+
+  ---@type Output
   local output = Output:new {
     name = self.meta.name,
     on_success = on_success,

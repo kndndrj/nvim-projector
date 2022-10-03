@@ -1,22 +1,25 @@
+---@alias config { loaders: {module: string, path: string}[], outputs: {task:string, debug:string, database:string}}
+
+---@type config
 local config = {
   loaders = {
     {
-      module = require 'projector.loaders.legacy.json',
-      path = vim.fn.getcwd() .. '/.vscode/projector.json',
+      module = 'legacy.json',
+      path = vim.fn.getcwd() .. '/.vim/projector.json',
     },
     {
-      module = require 'projector.loaders.legacy.rc',
+      module = 'legacy.rc',
       path = '',
     },
     {
-      module = require 'projector.loaders.dap',
+      module = 'dap',
       path = '',
     },
   },
   outputs = {
-    task = require 'projector.outputs.builtin',
-    debug = require 'projector.outputs.dap',
-    database = require 'projector.outputs.dadbod',
+    task = 'builtin',
+    debug = 'dap',
+    database = 'dadbod',
   },
 }
 

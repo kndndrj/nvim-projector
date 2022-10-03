@@ -21,17 +21,20 @@ end
 
 -- Load tasks from all loaders
 function Handler:load_sources()
-  local config = require 'projector.config'
+  local config = require 'projector'.config
 
   local tasks = {}
   -- Load all tasks from different loaders
   for _, loader in pairs(config.loaders) do
-    local l = loader.module
-    local ts = l:load(loader.path)
-    if ts then
-      for _, t in pairs(ts) do
-        t:set_expand_variables(function(c) return l:expand_variables(c) end)
-        table.insert(tasks, t)
+    ---@type boolean, Loader
+    local ok, l = pcall(require, 'projector.loaders.' .. loader.module)
+    if ok then
+      local ts = l:load(loader.path)
+      if ts then
+        for _, t in pairs(ts) do
+          t:set_expand_variables(function(c) return l:expand_variables(c) end)
+          table.insert(tasks, t)
+        end
       end
     end
   end
