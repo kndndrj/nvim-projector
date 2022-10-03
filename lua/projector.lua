@@ -50,8 +50,9 @@ function M.toggle_output()
   print("projector.toggle_output() is deprecated. Use projector.toggle() instead")
 end
 
+---@return string
 function M.status()
-  return "not implemented yet"
+  return table.concat(handler:dashboard(), " ")
 end
 
 function M.handler()

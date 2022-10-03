@@ -35,8 +35,9 @@ function BuiltinOutput:init(configuration)
 
   self.status = "visible"
 
-  -- Rename the buffer
+  -- Rename and hide the buffer
   vim.api.nvim_command('file ' .. name .. ' ' .. bufnr)
+  vim.o.buflisted = false
 
   -- Autocommands
   -- Deactivate the output if we delete the buffer

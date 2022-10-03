@@ -89,7 +89,7 @@ function Handler:visible_tasks()
 end
 
 -- Get tasks that are currently hidden
----@return Task[]
+---@return { [string]: Task }
 function Handler:hidden_tasks()
   local hidden = {}
   for _, t in pairs(self.tasks) do
@@ -309,6 +309,22 @@ function Handler:toggle_output()
   end
 
   print('No hidden tasks running')
+end
+
+---@return string[]
+function Handler:dashboard()
+  local ret = {}
+  for _, id in ipairs(self.id_lookup) do
+    local task = self.tasks[id]
+    if task:is_live() then
+      if id == self.id_current then
+        table.insert(ret, "[" .. task.meta.name .. "]")
+      else
+        table.insert(ret, task.meta.name)
+      end
+    end
+  end
+  return ret
 end
 
 return Handler
