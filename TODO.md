@@ -1,0 +1,13 @@
+- [ ] Add table option to loaders - to specify tasks in init.lua
+- [ ] Write more loaders:
+    - [ ] package.json
+    - [ ] launch.json
+    - [ ] tasks.json
+    - [ ] .idea
+- [ ] Write more outputs:
+    - [ ] floating
+- [ ] Write documentation
+- [ ] More descriptive method and variable names
+- [ ] Make a propper configuration contract with descriptive names
+- [ ] Prettier task selector output
+- [ ] Automatic config reload

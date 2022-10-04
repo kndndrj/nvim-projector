@@ -1,14 +1,18 @@
 local Task = require 'projector.task'
 local Loader = require 'projector.contract.loader'
-local common = require 'projector.loaders.legacy.common'
+local common = require 'projector.loaders.common'
 
 ---@type Loader
 local LegacyJsonLoader = Loader:new("legacy-json")
 
----@param path string
+---@param opt string Path to legacy projector.json
 ---@return Task[]|nil
-function LegacyJsonLoader:load(path)
-  path = path or (vim.fn.getcwd() .. '/.vim/projector.json')
+function LegacyJsonLoader:load(opt)
+  local path = opt or (vim.fn.getcwd() .. '/.vim/projector.json')
+  if type(path) ~= "string" then
+    print("LegacyJsonLoader error: got " .. type(path) .. ", want string")
+    return
+  end
 
   if not vim.loop.fs_stat(path) then
     return

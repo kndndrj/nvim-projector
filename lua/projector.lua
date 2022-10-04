@@ -56,6 +56,7 @@ function M.setup(config)
     end
   end
 
+  ---@type Handler
   handler = Handler:new()
   handler:load_sources()
 end

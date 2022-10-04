@@ -11,10 +11,10 @@ function Loader:new(name)
   return o
 end
 
----@param path string
+---@param opt any
 ---@return Task[]|nil
 ---@diagnostic disable-next-line: unused-local
-function Loader:load(path)
+function Loader:load(opt)
 	error("not_implemented")
 end
 
