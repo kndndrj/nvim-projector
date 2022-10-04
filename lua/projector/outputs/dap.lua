@@ -12,10 +12,11 @@ function DapOutput:init(configuration)
   if has_dap then
     self.status = "visible"
 
-    -- set status to inactive and close outputs on exit
+    -- set status if by any chance the above setting failed
     dap.listeners.before.event_initialized["projector"] = function()
       self.status = "visible"
     end
+    -- set status to inactive and hide outputs on exit
     dap.listeners.before.event_terminated["projector"] = function()
       self.status = "inactive"
       self:done(true)
@@ -28,14 +29,14 @@ function DapOutput:init(configuration)
   end
 end
 
-function DapOutput:open()
+function DapOutput:show()
   if has_dapui then
     dapui.open()
     self.status = "visible"
   end
 end
 
-function DapOutput:close()
+function DapOutput:hide()
   if has_dapui then
     dapui.close()
     self.status = "hidden"

@@ -38,7 +38,7 @@ function BuiltinLoader:load(opt)
   ---@type _, Configuration
   for _, config in pairs(data) do
     local scope = config.scope or "global"
-    local task_opts = { scope = scope, lang = config.lang }
+    local task_opts = { scope = scope, group = config.group }
     local task = Task:new(config, task_opts)
     table.insert(tasks, task)
   end

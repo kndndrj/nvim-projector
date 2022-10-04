@@ -23,7 +23,7 @@ function DadbodOutput:init(configuration)
 
   if has_dadbod_ui then
     self.status = "hidden"
-    self:open()
+    self:show()
   else
     self.status = "inactive"
   end
@@ -31,7 +31,7 @@ function DadbodOutput:init(configuration)
   self:done(true)
 end
 
-function DadbodOutput:open()
+function DadbodOutput:show()
   if has_dadbod_ui then
     vim.cmd(":DBUI")
 
@@ -46,7 +46,7 @@ function DadbodOutput:open()
   end
 end
 
-function DadbodOutput:close()
+function DadbodOutput:hide()
   if has_dadbod_ui then
     vim.cmd('execute "normal \\<Plug>(DBUI_Quit)"')
     self.status = "hidden"
@@ -54,7 +54,7 @@ function DadbodOutput:close()
 end
 
 function DadbodOutput:kill()
-  self:close()
+  self:hide()
 end
 
 ---@return Action[]|nil

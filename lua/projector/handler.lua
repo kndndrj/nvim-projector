@@ -104,7 +104,7 @@ function Handler:hidden_tasks()
   return hidden
 end
 
--- Select a task and it's capability and run it
+-- Select a task and it's mode and run it
 function Handler:select_and_run()
   if vim.tbl_isempty(self.tasks) then
     print("no tasks configured")
@@ -121,33 +121,33 @@ function Handler:select_and_run()
     ---@param choice string
     function(choice)
       if choice then
-        local caps = self.tasks[choice]:get_capabilities()
-        if #caps == 1 then
-          -- hide all other visible tasks and open this one
+        local modes = self.tasks[choice]:get_modes()
+        if #modes == 1 then
+          -- hide all other visible tasks and show this one
           for _, t in pairs(self:visible_tasks()) do
-            t:close_output()
+            t:hide_output()
           end
           self.id_current = choice
-          self.tasks[choice]:run(caps[1])
-        elseif #caps > 1 then
+          self.tasks[choice]:run(modes[1])
+        elseif #modes > 1 then
 
           vim.ui.select(
-            caps,
+            modes,
             {
               prompt = 'select mode:',
               format_item = function(item)
                 return item
               end,
             },
-            ---@param c Capability
-            function(c)
-              if c then
-                -- hide all other visible tasks and open this one
+            ---@param m Mode
+            function(m)
+              if m then
+                -- hide all other visible tasks and show this one
                 for _, t in pairs(self:visible_tasks()) do
-                  t:close_output()
+                  t:hide_output()
                 end
                 self.id_current = choice
-                self.tasks[choice]:run(c)
+                self.tasks[choice]:run(m)
               end
             end
           )
@@ -218,7 +218,7 @@ function Handler:continue()
 end
 
 -- Jump to next task's output
-function Handler:next_output()
+function Handler:next_task()
 
   local i = self.id_lookup_reverse[self.id_current] or 0
   local id = nil
@@ -243,17 +243,17 @@ function Handler:next_output()
     return
   end
 
-  -- close all visible tasks
+  -- hide all visible tasks
   for _, t in pairs(self:visible_tasks()) do
-    t:close_output()
+    t:hide_output()
   end
 
-  -- and open only this one
-  self.tasks[self.id_current]:open_output()
+  -- and show only this one
+  self.tasks[self.id_current]:show_output()
 end
 
 -- Jump to previous task's output
-function Handler:previous_output()
+function Handler:previous_task()
 
   local i = self.id_lookup_reverse[self.id_current] or #self.id_lookup + 1
   local id = nil
@@ -278,13 +278,13 @@ function Handler:previous_output()
     return
   end
 
-  -- close all visible tasks
+  -- hide all visible tasks
   for _, t in pairs(self:visible_tasks()) do
-    t:close_output()
+    t:hide_output()
   end
 
-  -- and open only this one
-  self.tasks[self.id_current]:open_output()
+  -- and show only this one
+  self.tasks[self.id_current]:show_output()
 end
 
 -- Toggle the current output or jump to next one if this one died
@@ -292,10 +292,10 @@ function Handler:toggle_output()
   local visible = self:visible_tasks()
   local hidden = self:hidden_tasks()
 
-  -- if any outputs are visible, close them
+  -- if any outputs are visible, hide them
   if #vim.tbl_keys(visible) > 0 then
     for _, t in pairs(visible) do
-      t:close_output()
+      t:hide_output()
     end
     return
   end
@@ -304,10 +304,10 @@ function Handler:toggle_output()
   -- if the current one isn't live, select the next one
   if #vim.tbl_keys(hidden) > 0 and self.id_current ~= nil then
     if self.tasks[self.id_current]:is_live() then
-      self.tasks[self.id_current]:open_output()
+      self.tasks[self.id_current]:show_output()
       return
     end
-    self:next_output()
+    self:next_task()
     return
   end
 
@@ -316,7 +316,7 @@ end
 
 -- Kill or restart the currently selected task
 ---@param opts? { restart: boolean }
-function Handler:kill_current(opts)
+function Handler:kill_current_task(opts)
   opts = opts or {}
   local task = self.tasks[self.id_current]
   if not task then

@@ -5,19 +5,19 @@
 ---@alias Action { label: string, action: fun(), override: boolean } table of actions
 
 -- What modes can the task run in
----@alias Capability "task"|"debug"|"database"
+---@alias Mode "task"|"debug"|"database"
 
 
 local utils = require 'projector.utils'
 
 
 ---@class Task
----@field meta { id: string, name: string, scope: string, lang: string } id, name, scope (project or global), lang (language group)
----@field capabilities Capability[] What can the task do (debug, task)
----@field last_cap Capability Capability that was selected previously
+---@field meta { id: string, name: string, scope: string, group: string } id, name, scope (project or global), group (language group)
+---@field modes Mode[] What can the task do (debug, task)
+---@field last_mode Mode Mode that was selected previously
 ---@field configuration Configuration Configuration of the task (command, args, env, cwd...)
 ---@field dependencies { task: Task, status: "done"|"error"|"" }[] List of dependent tasks
----@field output Output Output that's configured per capability
+---@field output Output Output that's configured per task's mode
 ---@filed _expand_config_variables fun(configuration: Configuration): Configuration Function that gets assigned to a task by a loader
 local Task = {}
 
@@ -28,35 +28,35 @@ function Task:new(configuration, opts)
   end
   opts = opts or {}
 
-  -- capabilities
-  local capabilities = {}
+  -- modes
+  local modes = {}
   if utils.is_in_table(configuration, { "command" }) then
-    table.insert(capabilities, "task")
+    table.insert(modes, "task")
   end
   if utils.is_in_table(configuration, { "type", "request" }) then
-    table.insert(capabilities, "debug")
+    table.insert(modes, "debug")
   end
   if utils.is_in_table(configuration, { "databases" }) or utils.is_in_table(configuration, { "queries" }) then
-    table.insert(capabilities, "database")
+    table.insert(modes, "database")
   end
-  if vim.tbl_isempty(capabilities) then
+  if vim.tbl_isempty(modes) then
     return
   end
 
   -- metadata
   local name = configuration.name or "[empty name]"
   local scope = opts.scope or "[empty scope]"
-  local lang = opts.lang or "[empty lang]"
+  local group = opts.group or "[empty group]"
 
   local o = {
     meta = {
-      id = scope .. "." .. lang .. "." .. name,
+      id = scope .. "." .. group .. "." .. name,
       name = name,
       scope = scope,
-      lang = lang,
+      group = group,
     },
-    capabilities = capabilities,
-    last_cap = nil,
+    modes = modes,
+    last_mode = nil,
     configuration = configuration,
     dependencies = {},
     output = nil,
@@ -74,10 +74,10 @@ function Task:set_expand_variables(func)
 end
 
 -- Run a task and hadle it's dependencies
----@param cap? Capability
+---@param mode? Mode
 ---@param on_success? fun()
 ---@param on_problem? fun()
-function Task:run(cap, on_success, on_problem)
+function Task:run(mode, on_success, on_problem)
   -- check parameters
   if not on_success then
     on_success = function() end
@@ -85,12 +85,12 @@ function Task:run(cap, on_success, on_problem)
   if not on_problem then
     on_problem = function() end
   end
-  if not cap and not self.last_cap then
+  if not mode and not self.last_mode then
     on_problem()
     return
   end
-  cap = cap or self.last_cap
-  self.last_cap = cap
+  mode = mode or self.last_mode
+  self.last_mode = mode
 
   -- If any output is already live, return
   if self:is_live() then
@@ -108,7 +108,7 @@ function Task:run(cap, on_success, on_problem)
   -- run the first not completed dependency
   for _, dep in pairs(self.dependencies) do
     if dep.status ~= "done" and dep.status ~= "error" then
-      local callback_success = function() dep.status = "done"; dep.task:kill_output() self:run(cap, on_success, on_problem) end
+      local callback_success = function() dep.status = "done"; dep.task:kill_output() self:run(mode, on_success, on_problem) end
       local callback_problem = function() dep.status = "error"; print("error running deps for: " .. self.meta.id); on_problem(); revert_dep_statuses() end
       dep.task:run("task", callback_success, callback_problem)
       return
@@ -120,9 +120,9 @@ function Task:run(cap, on_success, on_problem)
   -- create a new output
   local o = require 'projector'.config.outputs
   ---@type boolean, Output
-  local ok, Output = pcall(require, 'projector.outputs.' .. o[cap])
+  local ok, Output = pcall(require, 'projector.outputs.' .. o[mode])
   if not ok then
-    print('output for ' .. cap .. ' could not be created')
+    print('output for ' .. mode .. ' could not be created')
     on_problem()
     return
   end
@@ -145,9 +145,9 @@ function Task:run(cap, on_success, on_problem)
   self.output:init(self._expand_config_variables(self.configuration))
 end
 
----@return Capability[]
-function Task:get_capabilities()
-  return self.capabilities
+---@return Mode[]
+function Task:get_modes()
+  return self.modes
 end
 
 function Task:is_live()
@@ -174,17 +174,17 @@ function Task:is_hidden()
   return false
 end
 
-function Task:open_output()
+function Task:show_output()
   local o = self.output
   if o and o.status == "hidden" then
-    o:open()
+    o:show()
   end
 end
 
-function Task:close_output()
+function Task:hide_output()
   local o = self.output
   if o and o.status == "visible" then
-    o:close()
+    o:hide()
   end
 end
 

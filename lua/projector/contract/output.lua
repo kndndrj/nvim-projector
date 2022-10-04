@@ -50,13 +50,13 @@ function Output:init(configuration)
   error("not_implemented")
 end
 
--- function that opens the output (shows it on screen)
-function Output:open()
+-- function that shows the output on screen
+function Output:show()
   error("not_implemented")
 end
 
--- function that closes the output (hides it from screen)
-function Output:close()
+-- function that hides the output from screen
+function Output:hide()
   error("not_implemented")
 end
 

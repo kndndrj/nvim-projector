@@ -14,9 +14,9 @@ function LegacyRcLoader:load()
 
   for scope, range in pairs(data) do
 
-    for _, langs in pairs(range) do
+    for _, groups in pairs(range) do
 
-      for lang, configs in pairs(langs) do
+      for group, configs in pairs(groups) do
         for _, config in pairs(configs) do
 
           -- translate dependencies
@@ -29,11 +29,11 @@ function LegacyRcLoader:load()
             end
             config.dependencies = deps
           end
-          -- if run_command field exists, add the task capability
+          -- translate run_command
           if config.run_command then
             config.command = config.run_command
           end
-          local task = Task:new(config, { scope = scope, lang = lang })
+          local task = Task:new(config, { scope = scope, group = group })
           table.insert(tasks, task)
 
         end

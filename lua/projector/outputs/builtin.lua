@@ -56,12 +56,12 @@ function BuiltinOutput:init(configuration)
       end })
 end
 
-function BuiltinOutput:open()
+function BuiltinOutput:show()
   if self.status == "inactive" or self.status == "" then
     print('Output not live')
     return
   elseif self.status == "visible" then
-    print('Already open')
+    print('Already visible')
     return
   end
 
@@ -73,12 +73,12 @@ function BuiltinOutput:open()
   self.status = "visible"
 end
 
-function BuiltinOutput:close()
+function BuiltinOutput:hide()
   if self.status == "inactive" or self.status == "" then
     print('Output not live')
     return
   elseif self.status == "hidden" then
-    print('Already closed')
+    print('Already hidden')
     return
   end
 

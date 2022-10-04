@@ -73,12 +73,12 @@ end
 
 function M.next()
   if not check_handler(handler) then return end
-  handler:next_output()
+  handler:next_task()
 end
 
 function M.previous()
   if not check_handler(handler) then return end
-  handler:previous_output()
+  handler:previous_task()
 end
 
 function M.toggle()
@@ -88,12 +88,12 @@ end
 
 function M.restart()
   if not check_handler(handler) then return end
-  handler:kill_current { restart = true }
+  handler:kill_current_task { restart = true }
 end
 
 function M.kill()
   if not check_handler(handler) then return end
-  handler:kill_current { restart = false }
+  handler:kill_current_task { restart = false }
 end
 
 ---@deprecated

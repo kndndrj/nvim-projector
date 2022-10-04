@@ -34,7 +34,7 @@ function LegacyJsonLoader:load(opt)
   for type, range in pairs(data) do
     if type == "debug" or type == "tasks" then
 
-      for lang, configs in pairs(range) do
+      for group, configs in pairs(range) do
         for _, config in pairs(configs) do
 
           -- translate dependencies
@@ -47,11 +47,11 @@ function LegacyJsonLoader:load(opt)
             end
             config.dependencies = deps
           end
-          -- if run_command field exists, add the task capability
+          -- translate run_command
           if config.run_command then
             config.command = config.run_command
           end
-          local task = Task:new(config, { scope = "project", lang = lang })
+          local task = Task:new(config, { scope = "project", group = group })
           table.insert(tasks, task)
         end
       end
@@ -61,7 +61,7 @@ function LegacyJsonLoader:load(opt)
       config.name = "Database settings"
       config.databases = config.dbs
       config.queries = config.db_ui_table_helpers
-      local task = Task:new(config, { scope = "project", lang = "sql" })
+      local task = Task:new(config, { scope = "project", group = "sql" })
       table.insert(tasks, task)
     end
   end

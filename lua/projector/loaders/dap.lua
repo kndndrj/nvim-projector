@@ -11,14 +11,15 @@ function DapLoader:load()
     return
   end
 
+---@cast dap -Output
   local data = dap.configurations
 
   -- map with Task objects
   local tasks = {}
 
-  for lang, configs in pairs(data) do
+  for group, configs in pairs(data) do
     for _, config in pairs(configs) do
-      local task_opts = { scope = "global", lang = lang }
+      local task_opts = { scope = "global", group = group }
       local task = Task:new(config, task_opts)
       table.insert(tasks, task)
     end
