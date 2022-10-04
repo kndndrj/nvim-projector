@@ -8,6 +8,6 @@
     - [ ] floating
 - [ ] Write documentation
 - [x] More descriptive method and variable names
-- [ ] Make a propper configuration contract with descriptive names
+- [x] Make a propper configuration contract with descriptive names
 - [ ] Prettier task selector output
 - [ ] Automatic config reload
