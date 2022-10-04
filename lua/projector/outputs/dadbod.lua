@@ -13,7 +13,6 @@ function DadbodOutput:init(configuration)
     return
   end
 
-  -- TODO: filter for specific fields (don't set everything as global var)
   for setting, config in pairs(configuration) do
     if setting == "databases" then
       vim.g["dbs"] = config

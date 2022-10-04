@@ -85,6 +85,16 @@ function M.toggle()
   handler:toggle_output()
 end
 
+function M.restart()
+  if not check_handler(handler) then return end
+  handler:kill_current { restart = true }
+end
+
+function M.kill()
+  if not check_handler(handler) then return end
+  handler:kill_current { restart = false }
+end
+
 ---@deprecated
 function M.toggle_output()
   if not check_handler(handler) then return end

@@ -313,6 +313,23 @@ function Handler:toggle_output()
   print('No hidden tasks running')
 end
 
+-- Kill or restart the currently selected task
+---@param opts? { restart: boolean }
+function Handler:kill_current(opts)
+  opts = opts or {}
+  local task = self.tasks[self.id_current]
+  if not task then
+    return
+  end
+  -- kill
+  task:kill_output()
+
+  -- restart if specified
+  if opts.restart then
+    task:run()
+  end
+end
+
 ---@return string[]
 function Handler:dashboard()
   local ret = {}

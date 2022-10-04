@@ -13,6 +13,9 @@ function DapOutput:init(configuration)
     self.status = "visible"
 
     -- set status to inactive and close outputs on exit
+    dap.listeners.before.event_initialized["projector"] = function()
+      self.status = "visible"
+    end
     dap.listeners.before.event_terminated["projector"] = function()
       self.status = "inactive"
       self:done(true)

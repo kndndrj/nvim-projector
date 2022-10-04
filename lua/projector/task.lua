@@ -14,6 +14,7 @@ local utils = require 'projector.utils'
 ---@class Task
 ---@field meta { id: string, name: string, scope: string, lang: string } id, name, scope (project or global), lang (language group)
 ---@field capabilities Capability[] What can the task do (debug, task)
+---@field last_cap Capability Capability that was selected previously
 ---@field configuration Configuration Configuration of the task (command, args, env, cwd...)
 ---@field dependencies { task: Task, status: "done"|"error"|"" }[] List of dependent tasks
 ---@field output Output Output that's configured per capability
@@ -55,6 +56,7 @@ function Task:new(configuration, opts)
       lang = lang,
     },
     capabilities = capabilities,
+    last_cap = nil,
     configuration = configuration,
     dependencies = {},
     output = nil,
@@ -72,7 +74,7 @@ function Task:set_expand_variables(func)
 end
 
 -- Run a task and hadle it's dependencies
----@param cap Capability
+---@param cap? Capability
 ---@param on_success? fun()
 ---@param on_problem? fun()
 function Task:run(cap, on_success, on_problem)
@@ -83,10 +85,12 @@ function Task:run(cap, on_success, on_problem)
   if not on_problem then
     on_problem = function() end
   end
-  if not cap then
+  if not cap and not self.last_cap then
     on_problem()
     return
   end
+  cap = cap or self.last_cap
+  self.last_cap = cap
 
   -- If any output is already live, return
   if self:is_live() then
