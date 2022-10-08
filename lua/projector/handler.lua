@@ -1,10 +1,14 @@
 local utils = require 'projector.utils'
 
+-- Information that's displayed in the picker
+---@alias Display { loader: string, scope: string, group: string, name: string, modes: string|string[] }
+
 ---@class Handler
 ---@field tasks { [string]: Task }
 ---@field id_current string id of the current task
 ---@field id_lookup_reverse { [string]: integer } reverse lookup of task ids in order
 ---@field id_lookup string[] reverse lookup of task ids in order
+---@field displays { [string]: Display } Table that stores task info that's displayed in the select menus
 local Handler = {}
 
 function Handler:new()
@@ -13,6 +17,7 @@ function Handler:new()
     id_current = nil,
     id_lookup = {},
     id_lookup_reverse = {},
+    displays = {},
   }
   setmetatable(o, self)
   self.__index = self
@@ -35,6 +40,14 @@ function Handler:load_sources()
         for _, t in pairs(ts) do
           t:set_expand_variables(function(c) return l:expand_variables(c) end)
           table.insert(tasks, t)
+          -- Insert icons/names into lookup table
+          self.displays[t.meta.id] = utils.map_icons {
+            loader = l.name,
+            scope = t.meta.scope,
+            group = t.meta.group,
+            name = t.meta.name,
+            modes = t.modes,
+          }
         end
       end
     end
@@ -110,12 +123,32 @@ function Handler:select_and_run()
     print("no tasks configured")
     return
   end
+
+  -- find the longest word for each category
+  local loader_max_len = utils.longest(self.displays, "loader")
+  local scope_max_len = utils.longest(self.displays, "scope")
+  local group_max_len = utils.longest(self.displays, "group")
+  local modes_max_len = utils.longest(self.displays, "modes")
+  local name_max_len = utils.longest(self.displays, "name")
+
   vim.ui.select(
     self.id_lookup,
     {
-      prompt = 'select a job:',
+      prompt = 'select a task:',
       format_item = function(item)
-        return self.tasks[item].meta.name
+        ---@type config
+        local config = require 'projector'.config
+        ---@type Display
+        local display = self.displays[item]
+
+        local loader = display.loader .. string.rep(" ", loader_max_len - vim.fn.strchars(display.loader))
+        local scope = display.scope .. string.rep(" ", scope_max_len - vim.fn.strchars(display.scope))
+        local group = display.group .. string.rep(" ", group_max_len - vim.fn.strchars(display.group))
+        local modes = display.modes .. string.rep(" ", modes_max_len - vim.fn.strchars(display.modes))
+        local name = display.name .. string.rep(" ", name_max_len - vim.fn.strchars(display.name))
+
+        return config.display_format(loader, scope, group, modes, name)
+
       end,
     },
     ---@param choice string
@@ -135,9 +168,6 @@ function Handler:select_and_run()
             modes,
             {
               prompt = 'select mode:',
-              format_item = function(item)
-                return item
-              end,
             },
             ---@param m Mode
             function(m)

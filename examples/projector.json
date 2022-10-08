@@ -34,7 +34,7 @@
         ]
       }
     ],
-    "shell": [
+    "sh": [
       {
         "name": "Ls",
         "command": "ls",

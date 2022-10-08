@@ -54,6 +54,14 @@ function M.setup(config)
         M.config.outputs.database = config.outputs.database
       end
     end
+    -- display_format
+    if config.display_format and type(config.display_format) == "function" then
+      M.config.display_format = config.display_format
+    end
+    -- icons
+    if config.icons then
+      M.config.icons = vim.tbl_deep_extend("force", M.config.icons, config.icons)
+    end
   end
 
   ---@type Handler

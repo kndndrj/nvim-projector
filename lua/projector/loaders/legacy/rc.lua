@@ -3,7 +3,7 @@ local Loader = require 'projector.contract.loader'
 local common = require 'projector.loaders.common'
 
 ---@type Loader
-local LegacyRcLoader = Loader:new("legacy-rc")
+local LegacyRcLoader = Loader:new("legacy.rc")
 
 ---@return Task[]|nil
 function LegacyRcLoader:load()

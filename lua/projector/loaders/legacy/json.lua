@@ -3,7 +3,7 @@ local Loader = require 'projector.contract.loader'
 local common = require 'projector.loaders.common'
 
 ---@type Loader
-local LegacyJsonLoader = Loader:new("legacy-json")
+local LegacyJsonLoader = Loader:new("legacy.json")
 
 ---@param opt string Path to legacy projector.json
 ---@return Task[]|nil
