@@ -39,19 +39,19 @@ function MyLoader:load(opt)
   for _, config in pairs(data) do
     -- Every task needs these 2 metadata fields...
     local task_opts = {
-	  scope = "project", --or "global" -  usualy "project" means local to project (e.g. from project config file)
-	                                   -- and "global" means that it's available from anywhere (just pick one if you aren't sure)
-	  group = config.language, -- try to use vim's filetype names here. For example: sh, python, go...
-	  }
-	-- ... and a config object. Translate the names from your format to projector's. Example:
-	local c = {
-		command = config.cmd,
-		args = config.arguments,
-		-- let's say that other names are identical.
-	}
-	-- Create a task...
+      scope = "project", --or "global" -  usualy "project" means local to project (e.g. from project config file)
+                                       -- and "global" means that it's available from anywhere (just pick one if you aren't sure)
+      group = config.language, -- try to use vim's filetype names here. For example: sh, python, go...
+    }
+    -- ... and a config object. Translate the names from your format to projector's. Example:
+    local c = {
+      command = config.cmd,
+      args = config.arguments,
+      -- let's say that other names are identical...
+    }
+    -- Create a task...
     local task = Task:new(c, task_opts)
-	-- ... and insert it to the list
+    -- ... and insert it to the list
     table.insert(tasks, task)
   end
 
@@ -177,15 +177,15 @@ function MyOutput:list_actions()
       label = "Say Something", -- Display name
       action = function() vim.cmd('echo "Something"')  end -- command to run - must be an anonymous function
       nested = { -- list of nested actions (to be displayed as a submenu)... if action is specified, this has no effect
-	{
-	  label = "Say Nothing",
-	  action = function() vim.cmd('echo "Nothing"')  end
-	},
-	-- ...
+        {
+          label = "Say Nothing",
+          action = function() vim.cmd('echo "Nothing"')  end
+        },
+        -- ...
       },
       override = false, -- optional parameter to run the task without the output even appearing
                         -- use this only on certain conditions, otherwise the task selector won't ever appear
-			-- Can only apply to action field!
+                        -- Can only apply to action field!
     },
   }
 end
