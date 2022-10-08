@@ -100,7 +100,7 @@ require"projector".restart()
 require"projector".kill()
 ```
 
-## Set Up
+## Setup
 
 The setup function takes an optional table parameter. Here are the defaults:
 ```lua

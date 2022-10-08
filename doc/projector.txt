@@ -1,176 +1,486 @@
-Projector                                                          *projector*
+projector.txt             Basic, yet extensible code-runner/project-configurator
 
 
-The idea of this plugin is to separate global and local configurations:
-- Global configs are the ones defined in the startup file (e.g. `init.lua`)
-- Local or project configs are defined in the project folder (e.g.
-  `launch.json` or `tasks.json`)
+================================================================================
+CONTENTS                                                      *projector-contents*
 
-Further more, the configurations are divided into debug and tasks sections:
-- Debug configurations are exactly the same as nvim-dap configurations
-- Tasks configurations are for defining the shell commands.
+1. Neovim Projector...................................|projector-neovim_projector|
+    1.1. What exactly is it?.......................|projector-what_exactly_is_it?|
+    1.2. Installation.....................................|projector-installation|
+    1.3. Getting started...............................|projector-getting_started|
+    1.4. Setup...................................................|projector-setup|
+            1.4.1. Configuration Object...........|projector-configuration_object|
+    1.5. Loaders and Outputs.......................|projector-loaders_and_outputs|
+        1.5.1. Loaders.........................................|projector-loaders|
+        1.5.2. Outputs.........................................|projector-outputs|
+    1.6. Issues.................................................|projector-issues|
+2. Projector's Extensions.......................|projector-projector's_extensions|
+    2.1. Custom Loader...................................|projector-custom_loader|
+    2.2. Custom Output...................................|projector-custom_output|
 
-The plugin can also load vim-dadbod-ui global variables from the `.json` file.
+================================================================================
+NEOVIM PROJECTOR                                      *projector-neovim_projector*
 
---------------------------------------------------------------------------------
-CONFIGURATION                                        *projector-configuration*
+Basic, yet extensible code-runner/project-configurator.
 
-The configurations can be set in `init.lua` under the following table:
->
-    require'projector'.configurations.<scope>.<type>.<language-group>
-<
+Run and manage tasks (shell commands) in nvim's integrated terminal!
+Integrates with nvim-dap!
+Configure vim-dadbod per-project
 
-Or they can be read from a `.json` file in your project folder. That can be
-achieved by placing this in your `init.lua`:
->
-    -- takes an optional argument for path, default is './.vim/projector.json'
-    require'projector.config_utils'.load_project_configurations()
-<
 
-If you want to load existing nvim-dap configurations, add this to `init.lua`:
->
-    require'projector.config_utils'.load_dap_configurations()
-<
-
-It is recommended to add the configurations under the `global` table in
-`init.lua` and use `projector.json` to specify the `project` (local)
-configurations.
-
-Examples of the configurations are listed in the Configuraion Examples
-(#configuration-examples) section.
 
 --------------------------------------------------------------------------------
-USAGE                                                        *projector-usage*
+WHAT EXACTLY IS IT?                                *projector-what_exactly_is_it?*
 
-The recommended way of using is to replace nvim-dap `.continue()` mapping and
-use the function provided by this plugin instead (this will replace dap's UI
-with telescope):
->
-    -- init.lua
-    vim.api.nvim_set_keymap('n', '<F5>', '<Cmd>lua \
-        require"projector".continue("all")<CR>', {noremap=true})
-<
+It's basically an easily-expandable code runner that supports all sorts of
+different configuration files, like:
+- VsCode's tasks.json WIP
+- VsCode's launch.json WIP
+- NPM's package.json WIP
+- idea's workspace.xml WIP
 
-Use this mapping to manage currently running "non-debug" tasks (toggle command
-output windows):
+It then detects "modes" for each of those tasks and determines if they can be
+ran as:
+- task
+- debug
+- database
+
+So called "loaders" (that load configuration) and "outputs" are fully modular.
+If you, for example don't wan't to use dap-ui for debugging, you can make an
+extension with your own preferences!
+
+Overview:
 >
-    vim.api.nvim_set_keymap('n', '<leader>dt', '<Cmd>lua \
-        require"projector".toggle_output()<CR>', {noremap=true})
+        LOADERS                                         OUTPUTS
+    ┌──────────────┐                                ┌──────────────┐
+    │              │                                │              │
+    │ tasks.json   ├───┐                        ┌───► task         │
+    │              │   │                        │   │              │
+    └──────────────┘   │     ┌─────────────┐    │   └──────────────┘
+                       │     │             │    │
+    ┌──────────────┐   │     │             │    │   ┌──────────────┐
+    │              │   │     │             │    │   │              │
+    │ launch.json  ├───┼─────►  Projector  ─────┼──►│ debug        │
+    │              │   │     │             │    │   │              │
+    └──────────────┘   │     │             │    │   └──────────────┘
+                       │     │             │    │
+    ┌──────────────┐   │     └─────────────┘    │   ┌──────────────┐
+    │              │   │                        │   │              │
+    │ package.json ├───┤                        ├───► database     │
+    │              │   │                        │   │              │
+    └──────────────┘   │                        │   └──────────────┘
+                       │                        │
+                       │                        │
+                ... ───┘                        └───►...
 <
 
 --------------------------------------------------------------------------------
-CONFIGURATION EXAMPLES                      *projector-configuration_examples*
+INSTALLATION                                              *projector-installation*
 
-INIT.LUA                                                  *projector-init.lua*
+Install this plugin with the plugin manager of your choice.
+Example with packer.nvim:
+>
+    use {
+      'kndndrj/nvim-projector',
+      requires = {
+        -- Install the ones you want (I recommend all)
+        'mfussenegger/nvim-dap',
+        'rcarriga/nvim-dap-ui',
+        'tpope/vim-dadbod',
+        'kristijanhusak/vim-dadbod-ui',
+        -- Devicons are also supported:
+        'kyazdani42/nvim-web-devicons',
+      },
+    }
+<
 
-*   Global debug:
+TIP: for eye candy and telescope picker, use something like dressing.nvim!
+
+--------------------------------------------------------------------------------
+GETTING STARTED                                        *projector-getting_started*
+
+1.  Put the setup function in your `init.lua`.
 >
-        require'projector'.configurations.global.debug.go = {
-          {
-            type = 'go',
-            name = 'Debug File',
-            request = 'launch',
-            showLog = false,
-            program = '${file}',
-            dlvToolPath = vim.fn.exepath('dlv'),
-          },
-        }
+        require 'projector'.setup()
 <
-*   Global tasks:
+2.  Replace dap's continue with ours.
 >
-        require'projector'.configurations.global.tasks.shell = {
-          {
-            name = 'Good Morning',
-            command = 'echo',
-            args = {
-              'I',
-              'need',
-              '$SOMETHING',
-            },
-            env = {
-              SOMETHING = 'coffee'
-            },
-          },
-          -- or
-          {
-            name = 'Good Morning',
-            command = 'echo "I need more sleep"',
-            cwd = '${workspaceFolder}',
-          },
-        }
+        -- replace
+        vim.keymap.set('n', '<leader>s', '<Cmd>lua require"dap".continue()<CR>', { noremap = true, silent = true })
+        -- with
+        vim.keymap.set('n', '<leader>s', '<Cmd>lua require"projector".continue()<CR>', { noremap = true, silent = true })
 <
-*   Project-local debug:
+3.  You can probably also remove any dap-ui specific keybindings if you have any.
+4.  Then map these functions to any keys you like:
 >
-        require'projector'.configurations.project.debug.go = {
-          -- not recommended to use in init.lua
+        require"projector".continue()
+        require"projector".toggle()
+        require"projector".next()
+        require"projector".previous()
+        require"projector".restart()
+        require"projector".kill()
+<
+
+--------------------------------------------------------------------------------
+SETUP                                                            *projector-setup*
+
+The setup function takes an optional table parameter. Here are the defaults:
+>
+    local config = {
+      -- array of loader names with parameters (for available outputs see LOADERS.md)
+      loaders = {
+        {
+          module = 'builtin',
+          opt = vim.fn.getcwd() .. '/.vim/projector.json',
+        },
+        {
+          module = 'dap',
+          opt = '',
+        },
+      },
+      -- map of outputs per mode (for available outputs see OUTPUTS.md)
+      outputs = {
+        task = 'builtin',
+        debug = 'dap',
+        database = 'dadbod',
+      },
+      -- function that formats the task selector output
+      display_format = function(loader, scope, group, modes, name)
+        return loader .. "  " .. scope .. "  " .. group .. "  " .. modes .. "  " .. name
+      end,
+      -- map of icons
+      -- NOTE: "groups" use nvim-web-devicons if available
+      icons = {
+        enable = true,
+        scopes = {
+          global = "",
+          project = "",
+        },
+        groups = {},
+        loaders = {},
+        modes = {
+          task = "",
+          debug = "",
+          database = ""
+        },
+      },
+    }
+<
+
+CONFIGURATION OBJECT                              *projector-configuration_object*
+
+This is a configuration for a task that projector can read.
+
+A task can have all of these fields or just a few filled out. What can the task
+do is determined automatically.
+>
+    {
+      -- common:
+      name = "Task", -- task's name
+      scope = "global", -- usually project or global
+      group = "go", --  language group (use vim filetype names for best icon experience)
+      dependencies = { "project.go.Run", "global.go.Generate" }, -- list of task id's to run before this one
+      after = "global.sh.After Task", -- task id to run after this one is finished
+      env = { a = "b" }, -- map of environment variables
+      cwd =  "$HOME", -- current working directory
+      args = { "--arg1", "--arg2" }, -- list of task's arguments
+      pattern = "vim regex", -- regex pattern to decide if a background task has finished (entered running state)
+                             -- task with this field is considered a long running task.
+                             -- If this task is specified as a dependency somewhere, it's considered as finished when this matches.
+      -- task specific:
+      command = "go run ${workspaceDirectory}/main.go", -- command to run in task mode
+      -- debug specific:
+      type = "delve", -- type of debug adapter
+      request = "launch",
+      program = "${workspaceDirectory}/main.go",
+      port = "9876",
+      -- + extra dap-specific parameters (see: https://github.com/mfussenegger/nvim-dap)
+      -- database specific:
+      databases = { -- list of databases
+        {
+          name = "My-DB",
+          url = "postgres://postgres:mypassword@localhost:5432/my-db",
+        },
+        {
           -- ...
-        }
-<
-*   Project-local tasks:
->
-        require'projector'.configurations.project.tasks.shell = {
-          -- not recommended to use in init.lua
-          -- ...
-        }
+        },
+      },
+      queries = { -- list of queries per database type (see: dadbod-ui table helpers)
+        postgresql = {
+          List = "select * from {table} order by id asc",
+          Count = "select count(*) from {table}"
+        },
+      }
+    }
 <
 
-PROJECTOR.JSON                                      *projector-projector.json*
+--------------------------------------------------------------------------------
+LOADERS AND OUTPUTS                                *projector-loaders_and_outputs*
 
-*   Project-local debug:
-add `run_command` to any debug config and run the configuration in non-debug mode.
+If you are interested in writing your own extension (either a loader or an
+output), read EXTENSIONS.md (./EXTENSIONS.md)
+
+LOADERS                                                        *projector-loaders*
+
+Loaders are simple modules that translate a config file into task objects that
+projector understands.
+
+(add to this list if you write your own)
+
+Available loaders:
+- Builtin Loader builtin
+  Loads tasks from default configs. (useful for specifying tasks in init.lua)
+  - module: `builtin`
+  - opt: `string | function | table`
+    - `string`: path to a json file with an array of default config objects (#configuration-object).
+    - `function`: a function that returns a list of default config objects (#configuration-object).
+    - `table`: a list of default config objects (#configuration-object).
+  - variable expansion: VsCode like variables (e.g. `${file}`)
+
+*   DAP Loader (builtin)
+    Loads tasks from nvim-dap's configurations.
+    *   module: `dap`
+    *   opt: none
+    *   variable expansion: VsCode like variables
+*   Legacy RC Loader (builtin)
+    Loads tasks from old projector format (e.g. from init.lua)
+    *   module: `legacy.rc`
+    *   opt: none
+    *   variable expansion: VsCode like variables (e.g. `${file}`)
+*   Legacy JSON Loader (builtin)
+    Loads tasks from old `projector.json` file
+    *   module: `legacy.json`
+    *   opt:  `string`
+    *   `string`: path to old `projector.json`
+    *   variable expansion: VsCode like variables (e.g. `${file}`)
+
+OUTPUTS                                                        *projector-outputs*
+
+Outputs are modules that recieve a configuration object and run it's commands.
+They show the output on screen.
+
+(add to this list if you write your own)
+
+Available outputs:
+- Builtin output (builtin)
+  Default task output (in the integrated terminal)
+  - module: `builtin`
+  - capabilities: `task`
+
+*   DAP output (builtin)
+    Default debug output with dap-ui support
+    *   module: `dap`
+    *   capabilities: `debug`
+*   Dadbod output (builtin)
+    Default database output with dadbod-ui support
+    *   module: `dadbod`
+    *   capabilities: `database`
+
+--------------------------------------------------------------------------------
+ISSUES                                                          *projector-issues*
+
+If you encounter any issues, don't hesitate to open a github issue!
+A list of already known issues can be found in KNOWN_ISSUES.md (./KNOWN_ISSUES.md),
+and what's planned for the near future can be read in TODO.md (./TODO.md).
+
+================================================================================
+PROJECTOR'S EXTENSIONS                          *projector-projector's_extensions*
+
+Projector is designed in a way that writing extensions should be extremly easy.
+You can write extensions for loaders and/or outputs.
+If you decide to write any extensions, please document them in README.md
+
+--------------------------------------------------------------------------------
+CUSTOM LOADER                                            *projector-custom_loader*
+
+If you find that projector doesn't support the task file (whatever you may call tasks.json and stuff like that), write the loader as an extension for the projector. To do that, first create the same directory structure that projector uses:
 >
-        "debug": {
-          "go": [
-            {
-              "run_command": "go run ${workspaceFolder}/main.go"
-              "type": "go",
-              "request": "launch",
-              "name": "My Project",
-              "program": "${workspaceFolder}/main.go",
-              "cwd": "${workspaceFolder}",
-              "console": "integratedTerminal",
-              "args": [
-                "--argument",
-                "1234"
-              ],
-              "env": {
-                "SOME_BOOL": "true"
-              },
-              "dlvToolPath": "/usr/bin/dlv",
-              "showLog": false
-            }
-          ]
-        }
+    mkdir -p lua/projector/loaders/<unique-name-of-your-loader>.lua
 <
-*   Project-local tasks (still the same file):
+
+NOTE: To see the loader contract, look into this file (./lua/projector/contract/loader.lua).
+
+In that file, you need to implement a few methods that the loader "interface" requires. Here is a commented example:
 >
-        "tasks": {
-          "go": [
-            {
-              "name": "Generate",
-              "command": "go generate",
-              "args": [
-                "${workspaceFolder}/tools.go"
-              ]
-            }
-          ]
-        }
+    -- Get Task object and a Loader interface
+    local Task = require 'projector.task'
+    local Loader = require 'projector.contract.loader'
+    -- Create a new loader
+    ---@type Loader
+    local MyLoader = Loader:new("myloader") -- add the name to be displayed in the task selector menu,
+                                            -- I suggest it to be the same as the name of this file
+    -- Implement a "load" method
+    -- use anything you like as opt, but make sure to specify it in the documentation.
+    ---@param opt string Path to myformat.xml file
+    -- return type should always be a list of Task objects or nil if nothing is loaded
+    ---@return Task[]|nil
+    function MyLoader:load(opt)
+      local path = opt or (vim.fn.getcwd() .. '/.myformat.xml')
+      local data = load_xml_file_into_lua_table()
+      -- List to return
+      ---@type Task[]
+      local tasks = {}
+      -- Fill the list
+      for _, config in pairs(data) do
+        -- Every task needs these 2 metadata fields...
+        local task_opts = {
+    	  scope = "project", --or "global" -  usualy "project" means local to project (e.g. from project config file)
+    	                                   -- and "global" means that it's available from anywhere (just pick one if you aren't sure)
+    	  group = config.language, -- try to use vim's filetype names here. For example: sh, python, go...
+    	  }
+    	-- ... and a config object. Translate the names from your format to projector's. Example:
+    	local c = {
+    		command = config.cmd,
+    		args = config.arguments,
+    		-- let's say that other names are identical.
+    	}
+    	-- Create a task...
+        local task = Task:new(c, task_opts)
+    	-- ... and insert it to the list
+        table.insert(tasks, task)
+      end
+      -- Finally, return the list
+      return tasks
+    end
+    -- Implement a "load" method
+    -- It takes a single "configuration" argument and returns the same back.
+    -- The purpose of this method is to expand fields like:
+    --   command = "${workspaceFolder}/run.sh"    to   command = "/home/user/project/run.sh"
+    ---@param configuration Configuration
+    ---@return Configuration
+    function MyLoader:expand_variables(configuration)
+      -- Our file doesn't support variable substitution, so we just return the same object back.
+      return configuration
+    end
+    -- Return the loader from the file
+    return MyLoader
 <
-*   Project-local vim-dadbod-ui (still the same file):
+
+After that, your loader can be registered to projector via it's `setup()` function:
 >
-        "database": {
-          "dbs": [
-            {
-              "name": "my-db",
-              "url": "postgres://postgres:mypassword@localhost:5432/my-db"
-            }
-          ],
-          "db_ui_table_helpers": {
-            "postgresql": {
-              "List": "select * from {table} order by id asc"
-            }
-          },
-          "db_ui_auto_execute_table_helpers": 1
-        }
+    require 'projector'.setup {
+      loaders = {
+        {
+          module = '<unique-name-of-your-loader>', -- name of your file in lua require syntax
+          opt = vim.fn.getcwd() .. '/.misc/tasks.xml', -- argument to your "load" method
+        },
+      },
+      -- ...
+    }
 <
+
+In short:
+1. Assign a name to your loader.
+2. Implement these methods:
+>
+    function Loader:load(opt) end
+    function Loader:expand_variables(configuration) end
+<
+
+--------------------------------------------------------------------------------
+CUSTOM OUTPUT                                            *projector-custom_output*
+
+If you find that projector is lacking some functionality for tasks, you can create your own output (runner). First create a new file:
+>
+    mkdir -p lua/projector/outputs/<unique-name-of-your-output>.lua
+<
+
+NOTE: To see the output contract, look into this file (./lua/projector/contract/output.lua).
+
+In that file, you need to implement a few methods that the output "interface" requires. Here is a commented example:
+>
+    -- Get the Output interface
+    local Output = require 'projector.contract.output'
+    -- Create a new output
+    ---@type Output
+    local MyOutput = Output:new()
+    -- Init method gets task's configuration and runs it
+    -- For available fields, see the configuration object specification in README.md
+    ---@param configuration Configuration
+    ---@diagnostic disable-next-line: unused-local
+    function MyOutput:init(configuration)
+      local term_options = {
+        env = configuration.env,
+        on_exit = function(_, code)
+          local ok = true
+          if code ~= 0 then ok = false end
+          -- You MUST trigger this method once the task finishes!!
+          -- on success: ok = true, on failure: ok = false
+          self:done(ok)
+        end,
+      }
+      -- Start the output
+      vim.api.nvim_command('bo 15new')
+      vim.fn.termopen(configuration.command, term_options)
+      -- You can use "meta" field to store any private info you need
+      self.meta.bufnr = vim.fn.bufnr()
+      self.meta.winid = vim.fn.win_getid()
+      -- Set status to visible if the output is shown on the screen
+      self.status = "visible"
+    end
+    function MyOutput:show()
+      vim.api.nvim_command('bo 15new')
+      -- show the output on screen if it isn't visible
+      -- For example: open a new window and open the buffer in it
+      vim.api.nvim_command('15split')
+      self.meta.winid = vim.fn.win_getid()
+      vim.api.nvim_command('b ' .. self.meta.bufnr)
+      self.status = "visible"
+    end
+    function MyOutput:hide()
+      -- Hide the output from the screen
+      -- For example: close the window, but keep the buffer
+      vim.api.nvim_win_close(self.meta.winid, true)
+      self.meta.winid = nil
+      self.status = "hidden"
+    end
+    function MyOutput:kill()
+      -- Stop the task from executing
+      -- For example: delete the window and buffer
+      vim.api.nvim_win_close(self.meta.winid, true)
+      vim.api.nvim_buf_delete(self.meta.bufnr, { force = true })
+      self.status = "inactive"
+    end
+    -- This method returns a list of actions that can be performed when the task is live
+    ---@return Action[]|nil
+    function MyOutput:list_actions()
+      return {
+        {
+          label = "Say Something", -- Display name
+          action = function() vim.cmd('echo "Something"')  end -- command to run - must be an anonymous function
+          override = false, -- optional parameter to run the task without the output even appearing
+                            -- use this only on certain conditions, otherwise the task selector won't ever appear
+        },
+      }
+    end
+    -- Return the output from the file
+    return MyOutput
+<
+
+After that, your output can be registered to projector via it's `setup()` function:
+>
+    require 'projector'.setup {
+      outputs = {
+        task = '<unique-name-of-your-loader>', -- name of your file in lua require syntax
+        -- or debug = '<unique-name-of-your-loader>',
+        -- or database = '<unique-name-of-your-loader>',
+      },
+      -- ...
+    }
+<
+
+In short:
+1. Implement these methods:
+>
+    function Output:init(configuration) end
+    function Output:show() end
+    function Output:hide() end
+    function Output:kill() end
+    function Output:list_actions() end
+<
+2. Call `self:done(true|false)` once the command finishes.
+3. Set `self.status` according to the task. supported values are: `"visible"`, `"hidden"`, `"inactive"`
+4. You only need to care about simple configuration options. For example
+   dependencies and post tasks are handled by projector. It's only important
+   that you trigger `self:done()` when needed!
 

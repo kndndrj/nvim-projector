@@ -3,7 +3,7 @@ Projector is designed in a way that writing extensions should be extremly easy.
 You can write extensions for loaders and/or outputs.
 If you decide to write any extensions, please document them in README.md
 
-## Loaders
+## Custom Loader
 If you find that projector doesn't support the task file (whatever you may call tasks.json and stuff like that), write the loader as an extension for the projector. To do that, first create the same directory structure that projector uses:
 ```sh
 mkdir -p lua/projector/loaders/<unique-name-of-your-loader>.lua
@@ -87,7 +87,7 @@ require 'projector'.setup {
 }
 ```
 
-#### In short:
+**In short**:
 1. Assign a name to your loader.
 2. Implement these methods:
     ```lua
@@ -95,7 +95,7 @@ require 'projector'.setup {
     function Loader:expand_variables(configuration) end
     ```
 
-## Outputs
+## Custom Output
 If you find that projector is lacking some functionality for tasks, you can create your own output (runner). First create a new file:
 ```sh
 mkdir -p lua/projector/outputs/<unique-name-of-your-output>.lua
@@ -198,7 +198,7 @@ require 'projector'.setup {
 }
 ```
 
-#### In short:
+**In short**:
 1. Implement these methods:
     ```lua
     function Output:init(configuration) end
