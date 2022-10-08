@@ -11,6 +11,7 @@ local utils = require 'projector.utils'
 ---@field env { [string]: string }
 ---@field cwd string
 ---@field args string[]
+---@field pattern string
 --- task
 ---@field command string
 --- debug
@@ -129,8 +130,20 @@ function Task:run(mode, on_success, on_problem)
   -- run the first not completed dependency
   for _, dep in pairs(self.dependencies) do
     if dep.status ~= "done" and dep.status ~= "error" then
-      local callback_success = function() dep.status = "done"; dep.task:kill_output() self:run(mode, on_success, on_problem) end
-      local callback_problem = function() dep.status = "error"; print("error running deps for: " .. self.meta.id); on_problem(); revert_dep_statuses() end
+      -- Set callbacks
+      local callback_success = function()
+        dep.status = "done"
+        dep.task:hide_output()
+        self:run(mode, on_success, on_problem)
+      end
+      local callback_problem = function()
+        dep.status = "error"
+        print("error running deps for: " .. self.meta.id)
+        -- trigger on problem, stop further dependency execution and revert task's dependency statuses
+        on_problem()
+        revert_dep_statuses()
+      end
+      -- Run the dependency in task mode
       dep.task:run("task", callback_success, callback_problem)
       return
     end

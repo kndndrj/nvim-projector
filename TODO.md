@@ -12,3 +12,5 @@
 - [x] Prettier task selector output
 - [ ] Automatic config reload
 - [ ] Replace print with vim.notify
+- [ ] Post run task
+- [ ] Long running tasks ready-matcher

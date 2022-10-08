@@ -3,6 +3,7 @@
 ---@field status "inactive"|"hidden"|"visible" Status of the output
 ---@field _callback_success fun() Anonymous callback function on successful output completion
 ---@field _callback_problem fun() Anonymous callback function on problematic output completion
+---@field _done_called boolean Has the :done() method already been called
 local Output = {}
 
 function Output:new(opts)
@@ -25,6 +26,7 @@ function Output:new(opts)
     status = "inactive",
     _callback_success = on_success,
     _callback_problem = on_problem,
+    _done_called = false,
   }
   setmetatable(o, self)
   self.__index = self
@@ -36,6 +38,11 @@ end
 -- DO NOT OVERWRITE
 ---@param ok boolean
 function Output:done(ok)
+  if self._done_called then
+    return
+  end
+  self._done_called = true
+
   if ok then
     self._callback_success()
   else

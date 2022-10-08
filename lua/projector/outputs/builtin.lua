@@ -24,6 +24,18 @@ function BuiltinOutput:init(configuration)
     end,
   }
 
+  -- If pattern is specified, long running task is implied
+  if configuration.pattern then
+    local regex = vim.regex(configuration.pattern)
+    term_options.on_stdout = function(_, data, _)
+      for _, line in ipairs(data) do
+        if regex:match_str(line) then
+          self:done(true)
+        end
+      end
+    end
+  end
+
   -- open the terminal in a new buffer
   vim.api.nvim_command('bo 15new')
   vim.fn.termopen(command, term_options)
