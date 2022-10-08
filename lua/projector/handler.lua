@@ -127,6 +127,14 @@ function Handler:select_and_run()
     return
   end
 
+  ---@type config
+  local config = require 'projector'.config
+
+  -- reload configs if configured
+  if config.automatic_reload then
+    self:load_sources()
+  end
+
   -- find the longest word for each category
   local loader_max_len = utils.longest(self.displays, "loader")
   local scope_max_len = utils.longest(self.displays, "scope")
@@ -139,8 +147,6 @@ function Handler:select_and_run()
     {
       prompt = 'select a task:',
       format_item = function(item)
-        ---@type config
-        local config = require 'projector'.config
         ---@type Display
         local display = self.displays[item]
 

@@ -126,6 +126,8 @@ local config = {
   display_format = function(loader, scope, group, modes, name)
     return loader .. "  " .. scope .. "  " .. group .. "  " .. modes .. "  " .. name
   end,
+  -- Reload configurations automatically before displaying task selector
+  automatic_reload = false,
   -- map of icons
   -- NOTE: "groups" use nvim-web-devicons if available
   icons = {

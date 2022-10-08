@@ -58,6 +58,10 @@ function M.setup(config)
     if config.display_format and type(config.display_format) == "function" then
       M.config.display_format = config.display_format
     end
+    -- automatic configuration reload
+    if config.automatic_reload ~= nil then
+      M.config.automatic_reload = config.automatic_reload
+    end
     -- icons
     if config.icons then
       M.config.icons = vim.tbl_deep_extend("force", M.config.icons, config.icons)
@@ -69,7 +73,7 @@ function M.setup(config)
   handler:load_sources()
 end
 
-function M.refresh_jobs()
+function M.reload()
   if not check_handler(handler) then return end
   handler:load_sources()
 end

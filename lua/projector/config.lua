@@ -3,6 +3,7 @@
 ---@field outputs { task: string, debug: string, database: string }
 ---@field display_format fun(loader:string, scope:string, group:string, modes:string, name:string): string Function for fromating select menu
 ---@field icons { enable: boolean, scopes: { [string]: string }, groups: { [string]: string }, loaders: { [string]: string } , modes: { [string]: string } }
+---@field automatic_reload boolean Reload configurations automatically before displaying task selector
 
 
 ---@type config
@@ -29,6 +30,7 @@ local config = {
   display_format = function(loader, scope, group, modes, name)
     return loader .. "  " .. scope .. "  " .. group .. "  " .. modes .. "  " .. name
   end,
+  automatic_reload = false,
   icons = {
     enable = true,
     scopes = {
