@@ -7,7 +7,7 @@ local handler = nil
 ---@param hnd Handler
 local function check_handler(hnd)
   if not hnd then
-    vim.notify("projector.setup() has not been called yet!", vim.log.levels.WARN)
+    vim.notify("projector.setup() has not been called yet!", vim.log.levels.WARN, {title= 'nvim-projector'})
     return false
   end
   return true

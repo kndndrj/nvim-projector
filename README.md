@@ -207,7 +207,7 @@ Available loaders:
   Loads tasks from default configs. (useful for specifying tasks in init.lua)
   - module: `builtin`
   - opt: `string | function | table`
-    - `string`: path to a json file with an array of [default config objects](#configuration-object).
+    - `string`: path to a projector.json file - [example](./examples/projector.json)
     - `function`: a function that returns a list of [default config objects](#configuration-object).
     - `table`: a list of [default config objects](#configuration-object).
   - variable expansion: VsCode like variables (e.g. `${file}`)
@@ -228,7 +228,7 @@ Available loaders:
   Loads tasks from old `projector.json` file
   - module: `legacy.json`
   - opt:  `string`
-    - `string`: path to old `projector.json`
+    - `string`: path to old `projector.json` - [example](./examples/legacy-projector.json)
   - variable expansion: VsCode like variables (e.g. `${file}`)
 
 ### Outputs

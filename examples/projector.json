@@ -1,63 +1,60 @@
-{
-  "debug": {
-    "go": [
-      {
-        "run_command": "go run ${workspaceFolder}/main.go",
-        "depends": [
-          "project.tasks.go.Generate Stuff"
-        ],
-        "type": "delve",
-        "request": "launch",
-        "name": "My Project",
-        "program": "${workspaceFolder}/main.go",
-        "cwd": "${workspaceFolder}",
-        "console": "integratedTerminal",
-        "args": [
-          "--argument",
-          "1234"
-        ],
-        "env": {
-          "SOME_BOOL": "true"
-        },
-        "dlvToolPath": "/usr/bin/dlv",
-        "showLog": false
-      }
-    ]
-  },
-  "tasks": {
-    "go": [
-      {
-        "name": "Generate Stuff",
-        "command": "go generate",
-        "args": [
-          "${workspaceFolder}/tools.go"
-        ]
-      }
+// Projector's format that's supported by "builtin" loader
+// The whole file is just a json array of configuration objects (see README.md for it's specs)
+[
+  {
+    "name": "My Project",
+    "group": "go",
+    "command": "go run ${workspaceFolder}/main.go",
+    "dependencies": [
+      // <scope>.<group>.<name>
+      "project.go.Generate Stuff"
     ],
-    "sh": [
-      {
-        "name": "Ls",
-        "command": "ls",
-        "args": [
-          "-a",
-          "-l",
-          "${workspaceFolder}/"
-        ]
-      }
+    "type": "delve",
+    "request": "launch",
+    "program": "${workspaceFolder}/main.go",
+    "cwd": "${workspaceFolder}",
+    "console": "integratedTerminal",
+    "args": [
+      "--argument",
+      "1234"
+    ],
+    "env": {
+      "SOME_BOOL": "true"
+    },
+    "dlvToolPath": "/usr/bin/dlv",
+    "showLog": false
+  },
+  {
+    "name": "Generate Stuff",
+    "group": "go",
+    "command": "go generate",
+    "args": [
+      "${workspaceFolder}/tools.go"
     ]
   },
-  "database": {
-    "dbs": [
+  {
+    "name": "Ls",
+    "group": "sh",
+    "command": "ls",
+    "args": [
+      "-a",
+      "-l",
+      "${workspaceFolder}/"
+    ]
+  },
+  {
+    "name": "Postgres DB",
+    "group": "sql",
+    "databases": [
       {
         "name": "my-db",
         "url": "postgres://postgres:mypassword@localhost:5432/my-db"
       }
     ],
-    "db_ui_table_helpers": {
+    "queries": {
       "postgresql": {
         "List": "select * from {table} order by id asc"
       }
-    },
-    "db_ui_auto_execute_table_helpers": 1
+    }
   }
-}
+]

@@ -9,6 +9,7 @@ local BuiltinLoader = Loader:new("builtin")
 ---@return Task[]|nil
 function BuiltinLoader:load(opt)
   local data
+  local scope = ""
 
   if not opt or type(opt) == "string" then
     local path = opt or (vim.fn.getcwd() .. '/.vim/projector.json')
@@ -24,12 +25,20 @@ function BuiltinLoader:load(opt)
     end
 
     local contents = table.concat(lines, '\n')
-    data = vim.fn.json_decode(contents)
+    local ok
+    ok, data = pcall(vim.fn.json_decode, contents)
+    if not ok then
+      vim.notify('[Builtin Loader] Error parsing json file: "' .. path .. '"', vim.log.levels.ERROR, { title = 'nvim-projector' })
+      return
+    end
+    scope = "project"
 
   elseif type(opt) == "function" then
     data = opt()
+    scope = "global"
   elseif type(opt) == "table" then
     data = opt
+    scope = "global"
   end
 
   ---@type Task[]
@@ -37,7 +46,6 @@ function BuiltinLoader:load(opt)
 
   ---@type _, Configuration
   for _, config in pairs(data) do
-    local scope = config.scope or "global"
     local task_opts = { scope = scope, group = config.group }
     local task = Task:new(config, task_opts)
     table.insert(tasks, task)

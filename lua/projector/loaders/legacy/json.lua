@@ -26,7 +26,11 @@ function LegacyJsonLoader:load(opt)
   end
 
   local contents = table.concat(lines, '\n')
-  local data = vim.fn.json_decode(contents)
+  local ok, data = pcall(vim.fn.json_decode, contents)
+  if not ok then
+    vim.notify('[Legacy JSON Loader] Error parsing json file: "' .. path .. '"', vim.log.levels.ERROR, {title= 'nvim-projector'})
+    return
+  end
 
   -- map with Task objects
   local tasks = {}
