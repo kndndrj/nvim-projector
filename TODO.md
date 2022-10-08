@@ -6,7 +6,7 @@
     - [ ] .idea
 - [ ] Write more outputs:
     - [ ] floating
-- [ ] Write documentation
+- [x] Write documentation
 - [x] More descriptive method and variable names
 - [x] Make a propper configuration contract with descriptive names
 - [x] Prettier task selector output
@@ -14,3 +14,4 @@
 - [ ] Replace print with vim.notify
 - [x] Post run task
 - [x] Long running tasks ready-matcher
+- [ ] Allow nested action lists

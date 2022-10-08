@@ -1,249 +1,259 @@
 # Neovim Projector
 
-Better project-specific configuration for nvim-dap with basic task execution in
-the integrated terminal.
+Basic, yet extensible code-runner/project-configurator.
 
-**Start the debugger and tasks using telescope!**
-**Load dadbod configuration from a `.json` file**
+**Run and manage tasks (shell commands) in nvim's integrated terminal!**
+**Integrates with nvim-dap!**
+**Configure vim-dadbod per-project**
 
-## Why Another Plugin?
+![Showcase](./assets/showcase.gif)
 
-Think of it as a simple wrapper for nvim-dap with Run Debug functionality found
-in many IDEs.
+## What exactly is it?
 
-[![run - debug](https://img.shields.io/badge/▶_|_🪲-project-green?style=for-the-badge)]()
+It's basically an easily-expandable code runner that supports all sorts of
+different configuration files, like:
+- VsCode's tasks.json *WIP*
+- VsCode's launch.json *WIP*
+- NPM's package.json *WIP*
+- idea's workspace.xml *WIP*
 
-Some of the code was coppied from [yabs.nvim](https://github.com/pianocomposer321/yabs.nvim) and
-[nvim-dap](https://github.com/mfussenegger/nvim-dap). yabs.nvim is a great plugin, but it has a lot
-of functionality that I don't need, and nvim-dap's menues are a bit rough to navigate.
+It then detects "modes" for each of those tasks and determines if they can be
+ran as:
+- task
+- debug
+- database
 
-Hopefully that explains it :)
+So called "loaders" (that load configuration) and "outputs" are fully modular.
+If you, for example don't wan't to use dap-ui for debugging, you can make an
+extension with your own preferences!
+
+Overview:
+```
+    LOADERS                                         OUTPUTS
+
+┌──────────────┐                                ┌──────────────┐
+│              │                                │              │
+│ tasks.json   ├───┐                        ┌───► task         │
+│              │   │                        │   │              │
+└──────────────┘   │     ┌─────────────┐    │   └──────────────┘
+                   │     │             │    │
+┌──────────────┐   │     │             │    │   ┌──────────────┐
+│              │   │     │             │    │   │              │
+│ launch.json  ├───┼─────►  Projector  ─────┼──►│ debug        │
+│              │   │     │             │    │   │              │
+└──────────────┘   │     │             │    │   └──────────────┘
+                   │     │             │    │
+┌──────────────┐   │     └─────────────┘    │   ┌──────────────┐
+│              │   │                        │   │              │
+│ package.json ├───┤                        ├───► database     │
+│              │   │                        │   │              │
+└──────────────┘   │                        │   └──────────────┘
+                   │                        │
+                   │                        │
+            ... ───┘                        └───►...
+```
 
 ## Installation
 
-#### Requirements
-
-- Neovim verson 0.5+
-- [telescope](https://github.com/nvim-telescope/telescope.nvim)
-- [nvim-dap](https://github.com/mfussenegger/nvim-dap)
-- [dadbod(-ui)](https://github.com/kristijanhusak/vim-dadbod-ui) (optional)
-
-If you are fine with that, install the following plugins with your favourite
-plugin manager (example using
-[packer.nvim](https://github.com/wbthomason/packer.nvim)):
-
+Install this plugin with the plugin manager of your choice.
+Example with packer.nvim:
 ```lua
-use 'nvim-lua/plenary.nvim'
-use 'nvim-telescope/telescope.nvim'
-use 'mfussenegger/nvim-dap'
--- optionally...
-use 'tpope/vim-dadbod'
-use 'kristijanhusak/vim-dadbod-ui'
--- and finally...
-use 'kndndrj/nvim-projector'
+use {
+  'kndndrj/nvim-projector',
+  requires = {
+    -- Install the ones you want (I recommend all)
+    'mfussenegger/nvim-dap',
+    'rcarriga/nvim-dap-ui',
+    'tpope/vim-dadbod',
+    'kristijanhusak/vim-dadbod-ui',
+    -- Devicons are also supported:
+    'kyazdani42/nvim-web-devicons',
+  },
+}
 ```
+TIP: for eye candy and telescope picker, use something like dressing.nvim!
 
 ## Getting started
 
-The idea of this plugin is to separate **global** and **local** configurations:
-
-- **Global** configs are the ones defined in the startup file (e.g. `init.lua`)
-- **Local** or project configs are defined in the project folder (e.g. `launch.json` or `tasks.json`)
-
-Further more, the configurations are divided into **debug** and **tasks** sections:
-
-- **Debug** configurations are exactly the same as nvim-dap configurations
-- **Tasks** configurations are for defining the shell commands.
-
-The plugin can also load vim-dadbod-ui global variables from the `.json` file.
-
-Ask for help with `:h projector`!
-
-## Configuration
-
-The configurations can be set in `init.lua` under the following table:
-
-```
-require'projector'.configurations.<scope>.<type>.<language-group>
-```
-
-Or they can be read from a `.json` file in your project folder. That can be
-achieved by placing this in your `init.lua`:
-
+1. Put the setup function in your `init.lua`.
 ```lua
--- takes an optional argument for path, default is './.vim/projector.json'
-require'projector.config_utils'.load_project_configurations()
+require 'projector'.setup()
 ```
 
-If you want to load existing nvim-dap configurations, add this to `init.lua`:
-
+2. Replace dap's continue with ours.
 ```lua
-require'projector.config_utils'.load_dap_configurations()
+-- replace
+vim.keymap.set('n', '<leader>s', '<Cmd>lua require"dap".continue()<CR>', { noremap = true, silent = true })
+-- with
+vim.keymap.set('n', '<leader>s', '<Cmd>lua require"projector".continue()<CR>', { noremap = true, silent = true })
 ```
 
-It is recommended to add the configurations under the `global` table in
-`init.lua` and use `projector.json` to specify the `project` (local)
-configurations.
+3. You can probably also remove any dap-ui specific keybindings if you have any.
 
-Examples of the configurations are listed in the [Configuraion Examples](#configuration-examples)
-section.
-
-## Usage
-
-The recommended way of using is to **replace** nvim-dap `.continue()` mapping
-and use the function provided by this plugin instead (this will replace dap's UI
-with telescope):
-
+4. Then map these functions to any keys you like:
 ```lua
--- init.lua
-vim.api.nvim_set_keymap('n', '<F5>', '<Cmd>lua require"projector".continue("all")<CR>', {noremap=true})
+require"projector".continue()
+require"projector".toggle()
+require"projector".next()
+require"projector".previous()
+require"projector".restart()
+require"projector".kill()
 ```
 
-Use this mapping to manage currently running "non-debug" tasks (toggle command
-output windows):
+## Set Up
 
+The setup function takes an optional table parameter. Here are the defaults:
 ```lua
-vim.api.nvim_set_keymap('n', '<leader>dt', '<Cmd>lua require"projector".toggle_output()<CR>', {noremap=true})
-```
-
-## Configuration Examples
-
-#### `init.lua`
-
-- Global debug:
-
-```lua
-require'projector'.configurations.global.debug.go = {
-  {
-    type = 'go',
-    name = 'Debug File',
-    request = 'launch',
-    showLog = false,
-    program = '${file}',
-    dlvToolPath = vim.fn.exepath('dlv'),
-  },
-}
-```
-
-- Global tasks:
-
-```lua
-require'projector'.configurations.global.tasks.sh = {
-  {
-    name = 'Good Morning',
-    command = 'echo',
-    args = {
-      'I',
-      'need',
-      '$SOMETHING',
+local config = {
+  -- array of loader names with parameters (for available outputs see LOADERS.md)
+  loaders = {
+    {
+      module = 'builtin',
+      opt = vim.fn.getcwd() .. '/.vim/projector.json',
     },
-    env = {
-      SOMETHING = 'coffee'
+    {
+      module = 'dap',
+      opt = '',
     },
   },
-  -- or
-  {
-    name = 'Good Morning',
-    command = 'echo "I need more sleep"',
-    cwd = '${workspaceFolder}',
+  -- map of outputs per mode (for available outputs see OUTPUTS.md)
+  outputs = {
+    task = 'builtin',
+    debug = 'dap',
+    database = 'dadbod',
+  },
+  -- function that formats the task selector output
+  display_format = function(loader, scope, group, modes, name)
+    return loader .. "  " .. scope .. "  " .. group .. "  " .. modes .. "  " .. name
+  end,
+  -- map of icons
+  -- NOTE: "groups" use nvim-web-devicons if available
+  icons = {
+    enable = true,
+    scopes = {
+      global = "",
+      project = "",
+    },
+    groups = {},
+    loaders = {},
+    modes = {
+      task = "",
+      debug = "",
+      database = ""
+    },
   },
 }
 ```
 
-- Project-local debug:
+#### Configuration Object
+This is a configuration for a task that projector can read.
 
+A task can have all of these fields or just a few filled out. What can the task
+do is determined automatically.
 ```lua
-require'projector'.configurations.project.debug.go = {
-  -- not recommended to use in init.lua
-  -- ...
-}
-```
-
-- Project-local tasks:
-
-```lua
-require'projector'.configurations.project.tasks.sh = {
-  -- not recommended to use in init.lua
-  -- ...
-}
-```
-
-#### `projector.json`
-
-see the whole example [here](examples/projector.json).
-
-- Project-local debug:
-  add `run_command` to any debug config and run the configuration in
-  non-debug mode.
-
-```json
-"debug": {
-  "go": [
+{
+  -- common:
+  name = "Task", -- task's name
+  scope = "global", -- usually project or global
+  group = "go", --  language group (use vim filetype names for best icon experience)
+  dependencies = { "project.go.Run", "global.go.Generate" }, -- list of task id's to run before this one
+  after = "global.sh.After Task", -- task id to run after this one is finished
+  env = { a = "b" }, -- map of environment variables
+  cwd =  "$HOME", -- current working directory
+  args = { "--arg1", "--arg2" }, -- list of task's arguments
+  pattern = "vim regex", -- regex pattern to decide if a background task has finished (entered running state)
+                         -- task with this field is considered a long running task.
+                         -- If this task is specified as a dependency somewhere, it's considered as finished when this matches.
+  -- task specific:
+  command = "go run ${workspaceDirectory}/main.go", -- command to run in task mode
+  -- debug specific:
+  type = "delve", -- type of debug adapter
+  request = "launch",
+  program = "${workspaceDirectory}/main.go",
+  port = "9876",
+  -- + extra dap-specific parameters (see: https://github.com/mfussenegger/nvim-dap)
+  -- database specific:
+  databases = { -- list of databases
     {
-      "run_command": "go run ${workspaceFolder}/main.go",
-      "depends": [
-        "project.tasks.go.Generate Stuff"
-      ],
-      "type": "go",
-      "request": "launch",
-      "name": "My Project",
-      "program": "${workspaceFolder}/main.go",
-      "cwd": "${workspaceFolder}",
-      "console": "integratedTerminal",
-      "args": [
-        "--argument",
-        "1234"
-      ],
-      "env": {
-        "SOME_BOOL": "true"
-      },
-      "dlvToolPath": "/usr/bin/dlv",
-      "showLog": false
-    }
-  ]
-}
-```
-
-- Project-local tasks (still the same file):
-
-```json
-"tasks": {
-  "go": [
+      name = "My-DB",
+      url = "postgres://postgres:mypassword@localhost:5432/my-db",
+    },
     {
-      "name": "Generate Stuff",
-      "command": "go generate",
-      "args": [
-        "${workspaceFolder}/tools.go"
-      ]
-    }
-  ]
-}
-```
-
-- Project-local vim-dadbod-ui (still the same file):
-
-```json
-"database": {
-  "dbs": [
-    {
-      "name": "my-db",
-      "url": "postgres://postgres:mypassword@localhost:5432/my-db"
-    }
-  ],
-  "db_ui_table_helpers": {
-    "postgresql": {
-      "List": "select * from {table} order by id asc"
-    }
+      -- ...
+    },
   },
-  "db_ui_auto_execute_table_helpers": 1
+  queries = { -- list of queries per database type (see: dadbod-ui table helpers)
+    postgresql = {
+      List = "select * from {table} order by id asc",
+      Count = "select count(*) from {table}"
+    },
+  }
 }
 ```
 
-## Contributing
 
-If you have any questions or comments, please don't hesitate to open an issue.
-If you have a suggestion, that's even better, open an issue or implement the
-feature yourself and create a pull request!
+## Loaders and Outputs
+If you are interested in writing your own extension (either a loader or an
+output), read [EXTENSIONS.md](./EXTENSIONS.md)
 
-P.S. If you have a suggestion on a cleaner way of implementing telescope
-(specifically in `lua/projector.lua`), I would really appretiate it :).
+### Loaders
+Loaders are simple modules that translate a config file into task objects that
+projector understands.
+
+(add to this list if you write your own)
+
+Available loaders:
+- Builtin Loader *builtin*
+  Loads tasks from default configs. (useful for specifying tasks in init.lua)
+  - module: `builtin`
+  - opt: `string | function | table`
+    - `string`: path to a json file with an array of [default config objects](#configuration-object).
+    - `function`: a function that returns a list of [default config objects](#configuration-object).
+    - `table`: a list of [default config objects](#configuration-object).
+  - variable expansion: VsCode like variables (e.g. `${file}`)
+
+- DAP Loader (*builtin*)
+  Loads tasks from nvim-dap's configurations.
+  - module: `dap`
+  - opt: none
+  - variable expansion: VsCode like variables
+
+- Legacy RC Loader (*builtin*)
+  Loads tasks from old projector format (e.g. from init.lua)
+  - module: `legacy.rc`
+  - opt: none
+  - variable expansion: VsCode like variables (e.g. `${file}`)
+
+- Legacy JSON Loader (*builtin*)
+  Loads tasks from old `projector.json` file
+  - module: `legacy.json`
+  - opt:  `string`
+    - `string`: path to old `projector.json`
+  - variable expansion: VsCode like variables (e.g. `${file}`)
+
+### Outputs
+Outputs are modules that recieve a configuration object and run it's commands.
+They show the output on screen.
+
+(add to this list if you write your own)
+
+Available outputs:
+- Builtin output (*builtin*)
+  Default task output (in the integrated terminal)
+  - module: `builtin`
+  - capabilities: `task`
+
+- DAP output (*builtin*)
+  Default debug output with dap-ui support
+  - module: `dap`
+  - capabilities: `debug`
+
+- Dadbod output (*builtin*)
+  Default database output with dadbod-ui support
+  - module: `dadbod`
+  - capabilities: `database`
+
+## Issues
+If you encounter any issues, don't hesitate to open a github issue!
+A list of already known issues can be found in [KNOWN_ISSUES.md](./KNOWN_ISSUES.md),
+and what's planned for the near future can be read in [TODO.md](./TODO.md).
