@@ -14,4 +14,4 @@
 - [ ] Replace print with vim.notify
 - [x] Post run task
 - [x] Long running tasks ready-matcher
-- [ ] Allow nested action lists
+- [x] Allow nested action lists

@@ -225,7 +225,9 @@ function Handler:continue()
   local has_overrides = false
   for _, a in pairs(actions) do
     if a.override then
-      a.action()
+      if a.action then
+        a.action()
+      end
       has_overrides = true
     end
   end
@@ -239,21 +241,32 @@ function Handler:continue()
     action = function() self:select_and_run() end,
   })
 
-  -- select an action
-  vim.ui.select(
-    actions,
-    {
-      prompt = 'select an action:',
-      format_item = function(item)
-        return item.label
-      end,
-    },
-    function(choice)
-      if choice then
-        choice.action()
+  ---@param list Action[]
+  local function select_action(list)
+    vim.ui.select(
+      list,
+      {
+        prompt = 'select an action:',
+        format_item = function(item)
+          return item.label
+        end,
+      },
+      ---@param choice Action
+      function(choice)
+        if choice then
+          if choice.action then
+            choice.action()
+          elseif choice.nested then
+            -- Handle nested actions recursively
+            select_action(choice.nested)
+          end
+        end
       end
-    end
-  )
+    )
+  end
+
+  -- Open action selector
+  select_action(actions)
 end
 
 -- Jump to next task's output

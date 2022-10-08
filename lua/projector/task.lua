@@ -27,7 +27,7 @@ local utils = require 'projector.utils'
 
 
 -- Table of actions
----@alias Action { label: string, action: fun(), override: boolean } table of actions
+---@alias Action { label: string, action: fun(), override: boolean, nested: Action[] } table of actions
 
 
 -- What modes can the task run in

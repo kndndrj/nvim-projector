@@ -74,7 +74,8 @@ function DapOutput:list_actions()
     }
   end
 
-  local choices = {
+  ---@type Action[]
+  local actions = {
     {
       label = "Terminate session",
       action = dap.terminate
@@ -101,31 +102,31 @@ function DapOutput:list_actions()
     },
   }
 
-  -- Add stopped threads action
+  -- Add stopped threads nested actions
   local stopped_threads = vim.tbl_filter(function(t) return t.stopped end, session.threads)
 
   if next(stopped_threads) then
-    -- empty line before threads for prettier ui. TODO?
-      table.insert(choices, #choices+1, {
-        label = "",
-        action = function() end,
-      })
+    ---@type Action[]
+    local stopped_thread_actions = {}
 
     for _, t in pairs(stopped_threads) do
-      local name = t.name or t.id
-
-      table.insert(choices, #choices+1, {
-        label = "Resume thread " .. name,
+      table.insert(stopped_thread_actions, {
+        label = t.name or t.id,
         action = function()
           session.stopped_thread_id = t.id
           session:_step('continue')
         end
       })
-
     end
+
+    -- Add an action with nested actions to the list
+    table.insert(actions, 1, {
+      label = "Resume stopped thread",
+      nested = stopped_thread_actions,
+    })
   end
 
-  return choices
+  return actions
 end
 
 return DapOutput

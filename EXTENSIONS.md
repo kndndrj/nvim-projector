@@ -176,8 +176,16 @@ function MyOutput:list_actions()
     {
       label = "Say Something", -- Display name
       action = function() vim.cmd('echo "Something"')  end -- command to run - must be an anonymous function
+      nested = { -- list of nested actions (to be displayed as a submenu)... if action is specified, this has no effect
+	{
+	  label = "Say Nothing",
+	  action = function() vim.cmd('echo "Nothing"')  end
+	},
+	-- ...
+      },
       override = false, -- optional parameter to run the task without the output even appearing
                         -- use this only on certain conditions, otherwise the task selector won't ever appear
+			-- Can only apply to action field!
     },
   }
 end
