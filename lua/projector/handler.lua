@@ -67,7 +67,7 @@ function Handler:load_sources()
     self.id_lookup_reverse[v] = i
   end
 
-  -- configure dependencies for tasks
+  -- configure dependencies and post tasks for tasks
   -- TODO: prevent dependency cycles
   for _, t in pairs(self.tasks) do
     if t.configuration.dependencies then
@@ -77,6 +77,9 @@ function Handler:load_sources()
           task = self.tasks[d],
         })
       end
+    end
+    if t.configuration.after then
+      t.after = self.tasks[t.configuration.after]
     end
   end
 end

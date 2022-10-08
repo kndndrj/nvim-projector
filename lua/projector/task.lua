@@ -8,6 +8,7 @@ local utils = require 'projector.utils'
 ---@field scope string
 ---@field group string
 ---@field dependencies string[]
+---@field after string
 ---@field env { [string]: string }
 ---@field cwd string
 ---@field args string[]
@@ -39,6 +40,7 @@ local utils = require 'projector.utils'
 ---@field last_mode Mode Mode that was selected previously
 ---@field configuration Configuration Configuration of the task (command, args, env, cwd...)
 ---@field dependencies { task: Task, status: "done"|"error"|"" }[] List of dependent tasks
+---@field after Task a task to run after this one is finished
 ---@field output Output Output that's configured per task's mode
 ---@filed _expand_config_variables fun(configuration: Configuration): Configuration Function that gets assigned to a task by a loader
 local Task = {}
@@ -161,10 +163,20 @@ function Task:run(mode, on_success, on_problem)
     return
   end
 
+  -- handle post task with on_success output callback
+  local callback_success = on_success
+  if self.after then
+    callback_success = function ()
+      self:hide_output()
+      self.after:run("task")
+      on_success()
+    end
+  end
+
   ---@type Output
   local output = Output:new {
     name = self.meta.name,
-    on_success = on_success,
+    on_success = callback_success,
     on_problem = on_problem,
   }
 
