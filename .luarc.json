@@ -3,8 +3,7 @@
     "diagnostics": {
         "enable": true,
         "globals": [
-          "vim",
-          "use",
+          "vim"
         ]
     },
     "workspace": {
@@ -13,13 +12,6 @@
         },
         "maxPreload": 2000,
         "preloadFileSize": 1000
-    },
-    "format": {
-        "enable": true,
-    "defaultConfig":{
-        "indent_style":"space",
-        "indent_size":"2"
-    }
     },
     "telemetry.enable": false
 }
