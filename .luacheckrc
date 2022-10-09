@@ -6,7 +6,7 @@ self = false
 
 ignore = {
   "122", -- Indirectly setting a readonly global
-  "631" -- line too long
+  "631", -- line too long
 }
 
 -- Per file ignores
