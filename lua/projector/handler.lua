@@ -273,7 +273,7 @@ end
 function Handler:next_task()
 
   local i = self.id_lookup_reverse[self.id_current] or 0
-  local id = nil
+  local id
 
   for _ = 1, #self.id_lookup do
 
@@ -308,7 +308,7 @@ end
 function Handler:previous_task()
 
   local i = self.id_lookup_reverse[self.id_current] or #self.id_lookup + 1
-  local id = nil
+  local id
 
   for _ = 1, #self.id_lookup do
 
