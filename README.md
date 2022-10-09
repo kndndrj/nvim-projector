@@ -12,8 +12,8 @@ Basic, yet extensible code-runner/project-configurator.
 
 It's basically an easily-expandable code runner that supports all sorts of
 different configuration files, like:
-- VsCode's tasks.json *WIP*
-- VsCode's launch.json *WIP*
+- VsCode's tasks.json
+- VsCode's launch.json
 - NPM's package.json *WIP*
 - idea's workspace.xml *WIP*
 
@@ -68,6 +68,8 @@ use {
     'kristijanhusak/vim-dadbod-ui',
     -- Devicons are also supported:
     'kyazdani42/nvim-web-devicons',
+    -- Any extra extensions that you want:
+    'kndndrj/projector-loader-vscode',
   },
 }
 ```
@@ -231,6 +233,18 @@ Available loaders:
   - module: `legacy.json`
   - opt:  `string`
     - `string`: path to old `projector.json` - [example](./examples/legacy-projector.json)
+  - variable expansion: VsCode like variables (e.g. `${file}`)
+
+- tasks.json Loader (*kndndrj/projector-loader-vscode*)
+  - module: `tasksjson`
+  - opt:  `string`
+    - `string`: path to `tasks.json` - default: `./.vscode/tasks.json`
+  - variable expansion: VsCode like variables (e.g. `${file}`)
+
+- launch.json Loader (*kndndrj/projector-loader-vscode*)
+  - module: `launchjson`
+  - opt:  `string`
+    - `string`: path to `launch.json` - default: `./.vscode/launch.json`
   - variable expansion: VsCode like variables (e.g. `${file}`)
 
 ### Outputs

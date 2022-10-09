@@ -1,8 +1,9 @@
+# TODOs
 - [x] Add table option to loaders - to specify tasks in init.lua
 - [ ] Write more loaders:
     - [ ] package.json
-    - [ ] launch.json
-    - [ ] tasks.json
+    - [x] launch.json
+    - [x] tasks.json
     - [ ] .idea
 - [ ] Write more outputs:
     - [ ] floating
@@ -15,3 +16,5 @@
 - [x] Post run task
 - [x] Long running tasks ready-matcher
 - [x] Allow nested action lists
+- [ ] Stylua
+- [ ] Plenary tests
