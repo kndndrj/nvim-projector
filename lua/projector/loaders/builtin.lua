@@ -1,6 +1,6 @@
-local Task = require 'projector.task'
-local Loader = require 'projector.contract.loader'
-local common = require 'projector.loaders.common'
+local Task = require("projector.task")
+local Loader = require("projector.contract.loader")
+local common = require("projector.loaders.common")
 
 ---@type Loader
 local BuiltinLoader = Loader:new("builtin")
@@ -12,27 +12,30 @@ function BuiltinLoader:load(opt)
   local scope = ""
 
   if not opt or type(opt) == "string" then
-    local path = opt or (vim.fn.getcwd() .. '/.vim/projector.json')
+    local path = opt or (vim.fn.getcwd() .. "/.vim/projector.json")
     if not vim.loop.fs_stat(path) then
       return
     end
 
     local lines = {}
     for line in io.lines(path) do
-      if not vim.startswith(vim.trim(line), '//') then
+      if not vim.startswith(vim.trim(line), "//") then
         table.insert(lines, line)
       end
     end
 
-    local contents = table.concat(lines, '\n')
+    local contents = table.concat(lines, "\n")
     local ok
     ok, data = pcall(vim.fn.json_decode, contents)
     if not ok then
-      vim.notify('[Builtin Loader] Error parsing json file: "' .. path .. '"', vim.log.levels.ERROR, { title = 'nvim-projector' })
+      vim.notify(
+        '[Builtin Loader] Error parsing json file: "' .. path .. '"',
+        vim.log.levels.ERROR,
+        { title = "nvim-projector" }
+      )
       return
     end
     scope = "project"
-
   elseif type(opt) == "function" then
     data = opt()
     scope = "global"

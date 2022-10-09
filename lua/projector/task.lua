@@ -1,5 +1,4 @@
-local utils = require 'projector.utils'
-
+local utils = require("projector.utils")
 
 -- Table of configuration parameters
 ---@class Configuration
@@ -25,14 +24,11 @@ local utils = require 'projector.utils'
 ---@field databases { name: string, url: string }[]
 ---@field queries { [string]: {[string]: string } }
 
-
 -- Table of actions
 ---@alias Action { label: string, action: fun(), override: boolean, nested: Action[] } table of actions
 
-
 -- What modes can the task run in
 ---@alias Mode "task"|"debug"|"database"
-
 
 ---@class Task
 ---@field meta { id: string, name: string, scope: string, group: string } id, name, scope (project or global), group (language group)
@@ -84,7 +80,7 @@ function Task:new(configuration, opts)
     configuration = configuration,
     dependencies = {},
     output = nil,
-    _expand_config_variables = function() end
+    _expand_config_variables = function() end,
   }
   setmetatable(o, self)
   self.__index = self
@@ -154,11 +150,11 @@ function Task:run(mode, on_success, on_problem)
   revert_dep_statuses()
 
   -- create a new output
-  local o = require 'projector'.config.outputs
+  local o = require("projector").config.outputs
   ---@type boolean, Output
-  local ok, Output = pcall(require, 'projector.outputs.' .. o[mode])
+  local ok, Output = pcall(require, "projector.outputs." .. o[mode])
   if not ok then
-    print('output for ' .. mode .. ' could not be created')
+    print("output for " .. mode .. " could not be created")
     on_problem()
     return
   end
@@ -166,7 +162,7 @@ function Task:run(mode, on_success, on_problem)
   -- handle post task with on_success output callback
   local callback_success = on_success
   if self.after then
-    callback_success = function ()
+    callback_success = function()
       self:hide_output()
       self.after:run("task")
       on_success()

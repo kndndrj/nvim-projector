@@ -5,27 +5,26 @@
 ---@field icons { enable: boolean, scopes: { [string]: string }, groups: { [string]: string }, loaders: { [string]: string } , modes: { [string]: string } }
 ---@field automatic_reload boolean Reload configurations automatically before displaying task selector
 
-
 ---@type config
 local config = {
   loaders = {
     {
-      module = 'legacy.json',
-      opt = vim.fn.getcwd() .. '/.vim/projector.json',
+      module = "legacy.json",
+      opt = vim.fn.getcwd() .. "/.vim/projector.json",
     },
     {
-      module = 'legacy.rc',
-      opt = '',
+      module = "legacy.rc",
+      opt = "",
     },
     {
-      module = 'dap',
-      opt = '',
+      module = "dap",
+      opt = "",
     },
   },
   outputs = {
-    task = 'builtin',
-    debug = 'dap',
-    database = 'dadbod',
+    task = "builtin",
+    debug = "dap",
+    database = "dadbod",
   },
   display_format = function(loader, scope, group, modes, name)
     return loader .. "  " .. scope .. "  " .. group .. "  " .. modes .. "  " .. name
@@ -42,7 +41,7 @@ local config = {
     modes = {
       task = "",
       debug = "",
-      database = ""
+      database = "",
     },
   },
 }

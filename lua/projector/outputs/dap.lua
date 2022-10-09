@@ -1,6 +1,6 @@
-local Output = require 'projector.contract.output'
-local has_dap, dap = pcall(require, 'dap')
-local has_dapui, dapui = pcall(require, 'dapui')
+local Output = require("projector.contract.output")
+local has_dap, dap = pcall(require, "dap")
+local has_dapui, dapui = pcall(require, "dapui")
 ---@cast dap -Loader
 
 ---@type Output
@@ -68,7 +68,9 @@ function DapOutput:list_actions()
     return {
       {
         label = "Continue",
-        action = function() session:_step('continue') end,
+        action = function()
+          session:_step("continue")
+        end,
         override = true,
       },
     }
@@ -78,11 +80,11 @@ function DapOutput:list_actions()
   local actions = {
     {
       label = "Terminate session",
-      action = dap.terminate
+      action = dap.terminate,
     },
     {
       label = "Pause a thread",
-      action = dap.pause
+      action = dap.pause,
     },
     {
       label = "Restart session",
@@ -91,19 +93,21 @@ function DapOutput:list_actions()
     {
       label = "Disconnect (terminate = true)",
       action = function()
-        dap.disconnect({ terminateDebuggee = true })
-      end
+        dap.disconnect { terminateDebuggee = true }
+      end,
     },
     {
       label = "Disconnect (terminate = false)",
       action = function()
-        dap.disconnect({ terminateDebuggee = false })
+        dap.disconnect { terminateDebuggee = false }
       end,
     },
   }
 
   -- Add stopped threads nested actions
-  local stopped_threads = vim.tbl_filter(function(t) return t.stopped end, session.threads)
+  local stopped_threads = vim.tbl_filter(function(t)
+    return t.stopped
+  end, session.threads)
 
   if next(stopped_threads) then
     ---@type Action[]
@@ -114,8 +118,8 @@ function DapOutput:list_actions()
         label = t.name or t.id,
         action = function()
           session.stopped_thread_id = t.id
-          session:_step('continue')
-        end
+          session:_step("continue")
+        end,
       })
     end
 

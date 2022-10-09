@@ -1,4 +1,4 @@
-local utils = require 'projector.utils'
+local utils = require("projector.utils")
 
 -- Information that's displayed in the picker
 ---@alias Display { loader: string, scope: string, group: string, name: string, modes: string|string[] }
@@ -27,18 +27,20 @@ end
 -- Load tasks from all loaders
 function Handler:load_sources()
   ---@type config
-  local config = require 'projector'.config
+  local config = require("projector").config
 
   local tasks = {}
   -- Load all tasks from different loaders
   for _, loader in pairs(config.loaders) do
     ---@type boolean, Loader
-    local ok, l = pcall(require, 'projector.loaders.' .. loader.module)
+    local ok, l = pcall(require, "projector.loaders." .. loader.module)
     if ok then
       local ts = l:load(loader.opt)
       if ts then
         for _, t in pairs(ts) do
-          t:set_expand_variables(function(c) return l:expand_variables(c) end)
+          t:set_expand_variables(function(c)
+            return l:expand_variables(c)
+          end)
           table.insert(tasks, t)
           -- Insert icons/names into lookup table
           self.displays[t.meta.id] = utils.map_icons {
@@ -128,7 +130,7 @@ function Handler:select_and_run()
   end
 
   ---@type config
-  local config = require 'projector'.config
+  local config = require("projector").config
 
   -- reload configs if configured
   if config.automatic_reload then
@@ -145,7 +147,7 @@ function Handler:select_and_run()
   vim.ui.select(
     self.id_lookup,
     {
-      prompt = 'select a task:',
+      prompt = "select a task:",
       format_item = function(item)
         ---@type Display
         local display = self.displays[item]
@@ -157,7 +159,6 @@ function Handler:select_and_run()
         local name = display.name .. string.rep(" ", name_max_len - vim.fn.strchars(display.name))
 
         return config.display_format(loader, scope, group, modes, name)
-
       end,
     },
     ---@param choice string
@@ -172,11 +173,10 @@ function Handler:select_and_run()
           self.id_current = choice
           self.tasks[choice]:run(modes[1])
         elseif #modes > 1 then
-
           vim.ui.select(
             modes,
             {
-              prompt = 'select mode:',
+              prompt = "select mode:",
             },
             ---@param m Mode
             function(m)
@@ -190,7 +190,6 @@ function Handler:select_and_run()
               end
             end
           )
-
         end
       end
     end
@@ -238,7 +237,9 @@ function Handler:continue()
   -- add a task selector action
   table.insert(actions, 1, {
     label = "Run a task",
-    action = function() self:select_and_run() end,
+    action = function()
+      self:select_and_run()
+    end,
   })
 
   ---@param list Action[]
@@ -246,7 +247,7 @@ function Handler:continue()
     vim.ui.select(
       list,
       {
-        prompt = 'select an action:',
+        prompt = "select an action:",
         format_item = function(item)
           return item.label
         end,
@@ -271,12 +272,10 @@ end
 
 -- Jump to next task's output
 function Handler:next_task()
-
   local i = self.id_lookup_reverse[self.id_current] or 0
   local id
 
   for _ = 1, #self.id_lookup do
-
     if i >= #self.id_lookup then
       i = 0
     end
@@ -306,12 +305,10 @@ end
 
 -- Jump to previous task's output
 function Handler:previous_task()
-
   local i = self.id_lookup_reverse[self.id_current] or #self.id_lookup + 1
   local id
 
   for _ = 1, #self.id_lookup do
-
     if i <= 1 then
       i = #self.id_lookup + 1
     end
@@ -363,7 +360,7 @@ function Handler:toggle_output()
     return
   end
 
-  print('No hidden tasks running')
+  print("No hidden tasks running")
 end
 
 -- Kill or restart the currently selected task

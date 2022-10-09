@@ -1,6 +1,6 @@
-local Task = require 'projector.task'
-local Loader = require 'projector.contract.loader'
-local common = require 'projector.loaders.common'
+local Task = require("projector.task")
+local Loader = require("projector.contract.loader")
+local common = require("projector.loaders.common")
 
 ---@type Loader
 local LegacyJsonLoader = Loader:new("legacy.json")
@@ -8,7 +8,7 @@ local LegacyJsonLoader = Loader:new("legacy.json")
 ---@param opt string Path to legacy projector.json
 ---@return Task[]|nil
 function LegacyJsonLoader:load(opt)
-  local path = opt or (vim.fn.getcwd() .. '/.vim/projector.json')
+  local path = opt or (vim.fn.getcwd() .. "/.vim/projector.json")
   if type(path) ~= "string" then
     print("LegacyJsonLoader error: got " .. type(path) .. ", want string")
     return
@@ -20,15 +20,19 @@ function LegacyJsonLoader:load(opt)
 
   local lines = {}
   for line in io.lines(path) do
-    if not vim.startswith(vim.trim(line), '//') then
+    if not vim.startswith(vim.trim(line), "//") then
       table.insert(lines, line)
     end
   end
 
-  local contents = table.concat(lines, '\n')
+  local contents = table.concat(lines, "\n")
   local ok, data = pcall(vim.fn.json_decode, contents)
   if not ok then
-    vim.notify('[Legacy JSON Loader] Error parsing json file: "' .. path .. '"', vim.log.levels.ERROR, {title= 'nvim-projector'})
+    vim.notify(
+      '[Legacy JSON Loader] Error parsing json file: "' .. path .. '"',
+      vim.log.levels.ERROR,
+      { title = "nvim-projector" }
+    )
     return
   end
 
@@ -37,10 +41,8 @@ function LegacyJsonLoader:load(opt)
 
   for type, range in pairs(data) do
     if type == "debug" or type == "tasks" then
-
       for group, configs in pairs(range) do
         for _, config in pairs(configs) do
-
           -- translate dependencies
           if config.depends then
             local deps = {}
@@ -59,7 +61,6 @@ function LegacyJsonLoader:load(opt)
           table.insert(tasks, task)
         end
       end
-
     elseif type == "database" then
       local config = range
       config.name = "Database settings"

@@ -1,5 +1,5 @@
-local Task = require 'projector.task'
-local Loader = require 'projector.contract.loader'
+local Task = require("projector.task")
+local Loader = require("projector.contract.loader")
 
 ---@type Loader
 local DapLoader = Loader:new("dap")
@@ -11,7 +11,7 @@ function DapLoader:load()
     return
   end
 
----@cast dap -Output
+  ---@cast dap -Output
   local data = dap.configurations
 
   -- map with Task objects

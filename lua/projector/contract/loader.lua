@@ -4,8 +4,8 @@ local Loader = {}
 
 function Loader:new(name)
   local o = {
-		name = name or "[empty loader name]",
-	}
+    name = name or "[empty loader name]",
+  }
   setmetatable(o, self)
   self.__index = self
   return o
@@ -15,14 +15,14 @@ end
 ---@return Task[]|nil
 ---@diagnostic disable-next-line: unused-local
 function Loader:load(opt)
-	error("not_implemented")
+  error("not_implemented")
 end
 
 ---@param configuration Configuration
 ---@return Configuration
 ---@diagnostic disable-next-line: unused-local
 function Loader:expand_variables(configuration)
-	error("not_implemented")
+  error("not_implemented")
 end
 
 return Loader

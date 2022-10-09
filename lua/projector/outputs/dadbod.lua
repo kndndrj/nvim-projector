@@ -1,4 +1,4 @@
-local Output = require 'projector.contract.output'
+local Output = require("projector.contract.output")
 local has_dadbod_ui = vim.fn.exists(":DBUI") == 2
 
 ---@type Output
@@ -36,11 +36,12 @@ function DadbodOutput:show()
     vim.cmd(":DBUI")
 
     -- Autocommand for current buffer
-    vim.api.nvim_create_autocmd({ 'BufDelete', 'BufUnload' },
-      { buffer = vim.fn.bufnr(),
-        callback = function()
-          self.status = "hidden"
-        end })
+    vim.api.nvim_create_autocmd({ "BufDelete", "BufUnload" }, {
+      buffer = vim.fn.bufnr(),
+      callback = function()
+        self.status = "hidden"
+      end,
+    })
 
     self.status = "visible"
   end
@@ -58,7 +59,6 @@ function DadbodOutput:kill()
 end
 
 ---@return Action[]|nil
-function DadbodOutput:list_actions()
-end
+function DadbodOutput:list_actions() end
 
 return DadbodOutput

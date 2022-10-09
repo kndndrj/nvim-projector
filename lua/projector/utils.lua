@@ -2,7 +2,9 @@ local M = {}
 
 ---@param array string[]
 function M.alphanumsort(array)
-  local function padnum(d) return ("%03d%s"):format(#d, d) end
+  local function padnum(d)
+    return ("%03d%s"):format(#d, d)
+  end
 
   table.sort(array, function(a, b)
     return tostring(a):gsub("%d+", padnum) < tostring(b):gsub("%d+", padnum)
@@ -24,7 +26,6 @@ end
 ---@param obj table
 ---@param selector string
 function M.longest(obj, selector)
-
   local len = 0
   for _, item in pairs(obj) do
     local item_len = vim.fn.strchars(item[selector])
@@ -39,7 +40,7 @@ end
 ---@return Display
 function M.map_icons(display)
   ---@type config
-  local config = require 'projector'.config
+  local config = require("projector").config
 
   if not config.icons.enable then
     if type(display.modes) == "table" then
@@ -51,7 +52,7 @@ function M.map_icons(display)
 
   local group = config.icons.groups[display.group]
   if not group then
-    local has_devicons, devicons = pcall(require, 'nvim-web-devicons')
+    local has_devicons, devicons = pcall(require, "nvim-web-devicons")
     if has_devicons then
       local icon, hl = devicons.get_icon_by_filetype(display.group)
       if hl ~= "DevIconDefault" then

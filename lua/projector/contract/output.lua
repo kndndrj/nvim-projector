@@ -9,12 +9,12 @@ local Output = {}
 function Output:new(opts)
   opts = opts or {}
 
-  local on_success = function () end
+  local on_success = function() end
   if opts.on_success and type(opts.on_success) == "function" then
     on_success = opts.on_success
   end
 
-  local on_problem = function () end
+  local on_problem = function() end
   if opts.on_problem and type(opts.on_problem) == "function" then
     on_problem = opts.on_problem
   end
