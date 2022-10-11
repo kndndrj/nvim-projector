@@ -164,8 +164,15 @@ function M.run_task_or_debug(configuration)
   end
 end
 
+local deprecation_msg_called = false
 
 function M.continue(telescope_filter)
+  if not deprecation_msg_called then
+    vim.notify('Deprecation notice! nvim-projector has undergone a total rewrite. Switch to "refactor" branch to avoid compatibility issues. Reffer to the projects README for more info!', vim.log.levels.WARN, {title= 'nvim-projector'})
+  end
+  deprecation_msg_called = true
+
+
   if telescope_filter == nil or telescope_filter == '' then
     telescope_filter = 'debug'
   end

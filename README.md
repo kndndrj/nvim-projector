@@ -1,5 +1,48 @@
 # Neovim Projector
 
+## DEPRECATION NOTICE
+I rewrote the plugin from scratch, to be more modular and extensible. The
+current master will no longer be maintained and the new changes will be merged
+soon!
+
+I suggest that you switch to the branch `refactor` before it will be merged!
+Backwards compatibility is considered, so current configurations should still work.
+
+**Migrate** quickly like this:
+With packer:
+```lua
+use {
+  'kndndrj/nvim-projector',
+  branch = 'refactor',
+  requires = {
+    -- Install the ones you want (I recommend all)
+    'mfussenegger/nvim-dap',
+    'rcarriga/nvim-dap-ui',
+    'tpope/vim-dadbod',
+    'kristijanhusak/vim-dadbod-ui',
+    -- Devicons are also supported:
+    'kyazdani42/nvim-web-devicons',
+    -- Any extra extensions that you want:
+    'kndndrj/projector-loader-vscode',
+  },
+}
+```
+Then just call the setup function:
+```lua
+require 'projector'.setup()
+```
+and remove any arguments from the `continue()` function, like so:
+```lua
+vim.keymap.set('n', '<leader>s', '<Cmd>lua require"projector".continue()<CR>', { noremap = true, silent = true })
+```
+For additional keymappings and settings, reffer to README.md on `refactor` branch.
+If you experience any issues, feel free to open an issue on github!
+
+Note that telescope is no longer supported and it is suggested to use something
+like `dressing.nvim` for telescope support!
+
+## OLD README:
+
 Better project-specific configuration for nvim-dap with basic task execution in
 the integrated terminal.
 
