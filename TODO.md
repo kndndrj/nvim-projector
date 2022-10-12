@@ -12,9 +12,9 @@
 - [x] Make a propper configuration contract with descriptive names
 - [x] Prettier task selector output
 - [x] Automatic config reload
-- [ ] Replace print with vim.notify
+- [x] Replace print with vim.notify
 - [x] Post run task
 - [x] Long running tasks ready-matcher
 - [x] Allow nested action lists
-- [ ] Stylua
+- [x] Stylua
 - [ ] Plenary tests

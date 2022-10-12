@@ -1,4 +1,5 @@
 local Output = require("projector.contract.output")
+local utils = require("projector.utils")
 
 ---@type Output
 local BuiltinOutput = Output:new()
@@ -74,10 +75,10 @@ end
 
 function BuiltinOutput:show()
   if self.status == "inactive" or self.status == "" then
-    print("Output not live")
+    utils.log("warn", "Not live!", "Builtin Output " .. self.meta.name)
     return
   elseif self.status == "visible" then
-    print("Already visible")
+    utils.log("info", "Already visible.", "Builtin Output " .. self.meta.name)
     return
   end
 
@@ -91,10 +92,10 @@ end
 
 function BuiltinOutput:hide()
   if self.status == "inactive" or self.status == "" then
-    print("Output not live")
+    utils.log("warn", "Not live!", "Builtin Output " .. self.meta.name)
     return
   elseif self.status == "hidden" then
-    print("Already hidden")
+    utils.log("info", "Already hidden.", "Builtin Output " .. self.meta.name)
     return
   end
 
@@ -106,7 +107,7 @@ end
 
 function BuiltinOutput:kill()
   if self.status == "inactive" or self.status == "" then
-    print("Output not live")
+    utils.log("warn", "Not live!", "Builtin Output " .. self.meta.name)
     return
   end
 

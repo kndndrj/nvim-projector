@@ -114,7 +114,7 @@ function Task:run(mode, on_success, on_problem)
 
   -- If any output is already live, return
   if self:is_live() then
-    print(self.meta.name .. " already running")
+    utils.log("info", "Already live.", "Task " .. self.meta.name)
     on_success()
     return
   end
@@ -136,7 +136,7 @@ function Task:run(mode, on_success, on_problem)
       end
       local callback_problem = function()
         dep.status = "error"
-        print("error running deps for: " .. self.meta.id)
+        utils.log("error", 'Problem with dependency: "' .. dep.task.meta.id .. '".', "Task " .. self.meta.name)
         -- trigger on problem, stop further dependency execution and revert task's dependency statuses
         on_problem()
         revert_dep_statuses()
@@ -154,7 +154,7 @@ function Task:run(mode, on_success, on_problem)
   ---@type boolean, Output
   local ok, Output = pcall(require, "projector.outputs." .. o[mode])
   if not ok then
-    print("output for " .. mode .. " could not be created")
+    utils.log("error", 'Output for "' .. mode .. '" mode could not be created.', "Task " .. self.meta.name)
     on_problem()
     return
   end

@@ -1,4 +1,5 @@
 local Handler = require("projector.handler")
+local utils = require("projector.utils")
 
 ---@type Handler
 local handler = nil
@@ -7,7 +8,7 @@ local handler = nil
 ---@param hnd Handler
 local function check_handler(hnd)
   if not hnd then
-    vim.notify("projector.setup() has not been called yet!", vim.log.levels.WARN, { title = "nvim-projector" })
+    utils.log("warn", '"projector.setup()" has not been called yet!')
     return false
   end
   return true
@@ -127,7 +128,7 @@ function M.toggle_output()
     return
   end
   handler:toggle_output()
-  print("projector.toggle_output() is deprecated. Use projector.toggle() instead")
+  utils.log("warn", "projector.toggle_output() is deprecated. Use projector.toggle() instead.")
 end
 
 ---@return string

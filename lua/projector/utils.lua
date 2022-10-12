@@ -76,4 +76,27 @@ function M.map_icons(display)
   }
 end
 
+---@param level "info"|"warn"|"error"
+---@param message string
+---@param subtitle? string
+function M.log(level, message, subtitle)
+  -- log level
+  local l = vim.log.levels.OFF
+  if level == "info" then
+    l = vim.log.levels.INFO
+  elseif level == "warn" then
+    l = vim.log.levels.WARN
+  elseif level == "error" then
+    l = vim.log.levels.ERROR
+  end
+
+  -- subtitle
+  if subtitle then
+    subtitle = "[" .. subtitle .. "]:"
+  else
+    subtitle = ""
+  end
+  vim.notify(subtitle .. " " .. message, l, { title = "nvim-projector" })
+end
+
 return M

@@ -125,7 +125,7 @@ end
 -- Select a task and it's mode and run it
 function Handler:select_and_run()
   if vim.tbl_isempty(self.tasks) then
-    print("no tasks configured")
+    utils.log("warn", "No tasks configured!")
     return
   end
 
@@ -360,7 +360,7 @@ function Handler:toggle_output()
     return
   end
 
-  print("No hidden tasks running")
+  utils.log("warn", "No hidden tasks running!")
 end
 
 -- Kill or restart the currently selected task
