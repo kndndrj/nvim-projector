@@ -26,11 +26,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
       - name: Install md2vim
-        uses: giantswarm/install-binary-action@v1.0.0
-        with:
-          binary: "md2vim"
-          version: "21.12.14.0"
-          download_url: "https://github.com/FooSoft/${binary}/releases/download/${version}/${binary}_linux_amd64.tar.gz"
+        run: |
+          curl -L -o md2vim.tar.gz https://github.com/FooSoft/md2vim/releases/download/21.12.14.0/md2vim_linux_amd64.tar.gz
+          tar -xzvf md2vim.tar.gz
       - name: Generate Vim Help from Markdown
         run: |
           ./md2vim -desc "Basic, yet extensible code-runner/project-configurator" <(cat README.md EXTENSIONS.md) doc/projector.txt
