@@ -46,12 +46,16 @@ local function write_new_json(tasks, path)
   end
 
   -- format with jq
-  if vim.fn.executable('jq') == 1 then
-    local f = assert(io.popen("echo '".. json .."' | jq", 'r'))
-    json = assert(f:read('*a'))
+  if vim.fn.executable("jq") == 1 then
+    local f = assert(io.popen("echo '" .. json .. "' | jq", "r"))
+    json = assert(f:read("*a"))
     f:close()
   else
-    utils.log("warn", "\"jq\" is not executable - the new file won't be formatted\nIf you wish to format the files when converting, install \"jq\"", "Legacy JSON Loader")
+    utils.log(
+      "warn",
+      '"jq" is not executable - the new file won\'t be formatted\nIf you wish to format the files when converting, install "jq"',
+      "Legacy JSON Loader"
+    )
   end
 
   -- create a new file and write to it
@@ -64,7 +68,11 @@ local function write_new_json(tasks, path)
   file:write(json)
   file:close()
 
-  utils.log("info", "Successfully converted the config!\nBackup was created at:\n\t" .. backup_path, "Legacy JSON Loader")
+  utils.log(
+    "info",
+    "Successfully converted the config!\nBackup was created at:\n\t" .. backup_path,
+    "Legacy JSON Loader"
+  )
 end
 
 ---@type Loader

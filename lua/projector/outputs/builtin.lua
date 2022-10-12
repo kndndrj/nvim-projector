@@ -41,7 +41,7 @@ function BuiltinOutput:init(configuration)
 
   -- open the terminal in a new buffer
   vim.api.nvim_command("bo 15new")
-  vim.fn.termopen(command, term_options)
+  vim.fn.termopen("sh -c '" .. command .. "'", term_options)
 
   local bufnr = vim.fn.bufnr()
   self.meta.bufnr = bufnr

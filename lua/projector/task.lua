@@ -79,6 +79,7 @@ function Task:new(configuration, opts)
     last_mode = nil,
     configuration = configuration,
     dependencies = {},
+    after = nil,
     output = nil,
     _expand_config_variables = function() end,
   }

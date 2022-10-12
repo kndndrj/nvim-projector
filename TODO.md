@@ -18,3 +18,4 @@
 - [x] Allow nested action lists
 - [x] Stylua
 - [ ] Plenary tests
+- [ ] hidden tasks in task selector

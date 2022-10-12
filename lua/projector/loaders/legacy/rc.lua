@@ -32,7 +32,11 @@ local function convert_config(tasks)
     },
   }]]
 
-  utils.log("info", "Detected old projector configs in init.lua.\nTo update your config, stick this in your init.lua:\n\n" .. new_setup, "Legacy JSON Loader")
+  utils.log(
+    "info",
+    "Detected old projector configs in init.lua.\nTo update your config, stick this in your init.lua:\n\n" .. new_setup,
+    "Legacy JSON Loader"
+  )
 end
 
 ---@type Loader
