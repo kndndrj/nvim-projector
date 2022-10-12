@@ -6,6 +6,7 @@ local utils = require("projector.utils")
 ---@field name string
 ---@field scope string
 ---@field group string
+---@field presentation "menuhidden"[]
 ---@field dependencies string[]
 ---@field after string
 ---@field env { [string]: string }
@@ -32,6 +33,7 @@ local utils = require("projector.utils")
 
 ---@class Task
 ---@field meta { id: string, name: string, scope: string, group: string } id, name, scope (project or global), group (language group)
+---@field presentation { menu: { show: boolean } }
 ---@field modes Mode[] What can the task do (debug, task)
 ---@field last_mode Mode Mode that was selected previously
 ---@field configuration Configuration Configuration of the task (command, args, env, cwd...)
@@ -68,6 +70,24 @@ function Task:new(configuration, opts)
   local scope = opts.scope or "[empty scope]"
   local group = opts.group or "[empty group]"
 
+  -- presentation
+  local presentation = {
+    menu = {
+      show = true,
+    },
+  }
+  if configuration.presentation then
+    local present = configuration.presentation
+    if type(present) == "string" then
+      present = { configuration.presentation }
+    end
+    for _, p in ipairs(present) do
+      if p == "menuhidden" then
+        presentation.menu.show = false
+      end
+    end
+  end
+
   local o = {
     meta = {
       id = scope .. "." .. group .. "." .. name,
@@ -75,6 +95,7 @@ function Task:new(configuration, opts)
       scope = scope,
       group = group,
     },
+    presentation = presentation,
     modes = modes,
     last_mode = nil,
     configuration = configuration,

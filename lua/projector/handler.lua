@@ -123,7 +123,8 @@ function Handler:hidden_tasks()
 end
 
 -- Select a task and it's mode and run it
-function Handler:select_and_run()
+---@param override_hidden? boolean
+function Handler:select_and_run(override_hidden)
   if vim.tbl_isempty(self.tasks) then
     utils.log("warn", "No tasks configured!")
     return
@@ -144,11 +145,37 @@ function Handler:select_and_run()
   local modes_max_len = utils.longest(self.displays, "modes")
   local name_max_len = utils.longest(self.displays, "name")
 
+  local id_selection = {}
+  if not override_hidden then
+    -- filter out the hidden tasks
+    for _, id in ipairs(self.id_lookup) do
+      if self.tasks[id].presentation.menu.show then
+        table.insert(id_selection, id)
+      end
+    end
+
+    if #id_selection < #self.id_lookup then
+      table.insert(id_selection, "show_all")
+    end
+  else
+    -- show all tasks
+    id_selection = self.id_lookup
+  end
+
   vim.ui.select(
-    self.id_lookup,
+    id_selection,
     {
       prompt = "select a task:",
       format_item = function(item)
+        if item == "show_all" then
+          local msg = " Show Hidden Tasks "
+          local fill = string.rep(
+            "-",
+            ((loader_max_len + scope_max_len + group_max_len + modes_max_len + name_max_len) - vim.fn.strchars(msg)) / 2
+          )
+          return fill .. msg .. fill
+        end
+
         ---@type Display
         local display = self.displays[item]
 
@@ -164,6 +191,12 @@ function Handler:select_and_run()
     ---@param choice string
     function(choice)
       if choice then
+        -- show all tasks
+        if choice == "show_all" then
+          self:select_and_run(true)
+          return
+        end
+
         local modes = self.tasks[choice]:get_modes()
         if #modes == 1 then
           -- hide all other visible tasks and show this one

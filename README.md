@@ -160,6 +160,7 @@ do is determined automatically.
   name = "Task", -- task's name
   scope = "global", -- usually project or global
   group = "go", --  language group (use vim filetype names for best icon experience)
+  presentation = { "menuhidden" }, -- various presentation options (only "menuhidden" supported for now)
   dependencies = { "project.go.Run", "global.go.Generate" }, -- list of task id's to run before this one
   after = "global.sh.After Task", -- task id to run after this one is finished
   env = { a = "b" }, -- map of environment variables
