@@ -1,6 +1,39 @@
 local Task = require("projector.task")
 local Loader = require("projector.contract.loader")
 local common = require("projector.loaders.common")
+local utils = require("projector.utils")
+
+local asked = false
+-- Convert old file to new format
+---@param tasks Task[]
+---@param path string
+local function convert_config(tasks)
+  if asked then
+    return
+  end
+  asked = true
+  -- get new configs
+  local configs = {}
+  for _, t in ipairs(tasks) do
+    t.configuration.group = t.meta.group
+    table.insert(configs, t.configuration)
+  end
+
+  local new_setup = [[
+  local configs = ]] .. vim.inspect(configs) .. [[
+
+
+  require 'projector'.setup {
+    loaders = {
+      {
+        module = 'builtin',
+        opt = configs,
+      },
+    },
+  }]]
+
+  utils.log("info", "Detected old projector configs in init.lua.\nTo update your config, stick this in your init.lua:\n\n" .. new_setup, "Legacy JSON Loader")
+end
 
 ---@type Loader
 local LegacyRcLoader = Loader:new("legacy.rc")
@@ -25,10 +58,12 @@ function LegacyRcLoader:load()
               table.insert(deps, d)
             end
             config.dependencies = deps
+            config.depends = nil
           end
           -- translate run_command
           if config.run_command then
             config.command = config.run_command
+            config.run_command = nil
           end
           local task = Task:new(config, { scope = scope, group = group })
           table.insert(tasks, task)
@@ -36,6 +71,8 @@ function LegacyRcLoader:load()
       end
     end
   end
+
+  convert_config(tasks)
 
   return tasks
 end
