@@ -1,0 +1,43 @@
+name: Documentation Generation
+
+on: [push, pull_request]
+
+jobs:
+  check-markdown-format:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Python Setup
+        uses: actions/setup-python@v3
+        with:
+          python-version: '3.8'
+      - name: Install mdformat
+        run: |
+          pip install mdformat-gfm
+      - name: Markdown Style Check
+        run: |
+          mdformat --number --check README.md EXTENSIONS.md
+
+  generate-docs:
+    runs-on: ubuntu-20.04
+    needs: check-markdown-format
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Install md2vim
+        uses: giantswarm/install-binary-action@v1.0.0
+        with:
+          binary: "md2vim"
+          version: "21.12.14.0"
+          download_url: "https://github.com/FooSoft/${binary}/releases/download/${version}/${binary}_linux_amd64.tar.gz"
+      - name: Generate Vim Help from Markdown
+        run: |
+          ./md2vim -desc "Basic, yet extensible code-runner/project-configurator" <(cat README.md EXTENSIONS.md) doc/projector.txt
+      - name: Commit the Generated Help
+        uses: EndBug/add-and-commit@v9
+        with:
+          add: doc/projector.txt
+          author_name: Github Actions
+          author_email: actions@github
+          message: "[docgen] Update doc/projector.txt"

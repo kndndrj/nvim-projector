@@ -12,6 +12,7 @@ Basic, yet extensible code-runner/project-configurator.
 
 It's basically an easily-expandable code runner that supports all sorts of
 different configuration files, like:
+
 - VsCode's tasks.json
 - VsCode's launch.json
 - NPM's package.json *WIP*
@@ -19,6 +20,7 @@ different configuration files, like:
 
 It then detects "modes" for each of those tasks and determines if they can be
 ran as:
+
 - task
 - debug
 - database
@@ -28,6 +30,7 @@ If you, for example don't wan't to use dap-ui for debugging, you can make an
 extension with your own preferences!
 
 Overview:
+
 ```
     LOADERS                                         OUTPUTS
 
@@ -57,6 +60,7 @@ Overview:
 
 Install this plugin with the plugin manager of your choice.
 Example with packer.nvim:
+
 ```lua
 use {
   'kndndrj/nvim-projector',
@@ -73,38 +77,43 @@ use {
   },
 }
 ```
+
 TIP: for eye candy and telescope picker, use something like dressing.nvim!
 
 ## Getting started
 
 1. Put the setup function in your `init.lua`.
-```lua
-require 'projector'.setup()
-```
+
+   ```lua
+   require 'projector'.setup()
+   ```
 
 2. Replace dap's continue with ours.
-```lua
--- replace
-vim.keymap.set('n', '<leader>s', '<Cmd>lua require"dap".continue()<CR>', { noremap = true, silent = true })
--- with
-vim.keymap.set('n', '<leader>s', '<Cmd>lua require"projector".continue()<CR>', { noremap = true, silent = true })
-```
+
+   ```lua
+   -- replace
+   vim.keymap.set('n', '<leader>s', '<Cmd>lua require"dap".continue()<CR>', { noremap = true, silent = true })
+   -- with
+   vim.keymap.set('n', '<leader>s', '<Cmd>lua require"projector".continue()<CR>', { noremap = true, silent = true })
+   ```
 
 3. You can probably also remove any dap-ui specific keybindings if you have any.
 
 4. Then map these functions to any keys you like:
-```lua
-require"projector".continue()
-require"projector".toggle()
-require"projector".next()
-require"projector".previous()
-require"projector".restart()
-require"projector".kill()
-```
+
+   ```lua
+   require"projector".continue()
+   require"projector".toggle()
+   require"projector".next()
+   require"projector".previous()
+   require"projector".restart()
+   require"projector".kill()
+   ```
 
 ## Setup
 
 The setup function takes an optional table parameter. Here are the defaults:
+
 ```lua
 local config = {
   -- array of loader names with parameters (for available outputs see LOADERS.md)
@@ -150,10 +159,12 @@ local config = {
 ```
 
 #### Configuration Object
+
 This is a configuration for a task that projector can read.
 
 A task can have all of these fields or just a few filled out. What can the task
 do is determined automatically.
+
 ```lua
 {
   -- common:
@@ -196,20 +207,23 @@ do is determined automatically.
 }
 ```
 
-
 ## Loaders and Outputs
+
 If you are interested in writing your own extension (either a loader or an
 output), read [EXTENSIONS.md](./EXTENSIONS.md)
 
 ### Loaders
+
 Loaders are simple modules that translate a config file into task objects that
 projector understands.
 
 (add to this list if you write your own)
 
 Available loaders:
+
 - Builtin Loader *builtin*
   Loads tasks from default configs. (useful for specifying tasks in init.lua)
+
   - module: `builtin`
   - opt: `string | function | table`
     - `string`: path to a projector.json file - [example](./examples/projector.json)
@@ -219,58 +233,69 @@ Available loaders:
 
 - DAP Loader (*builtin*)
   Loads tasks from nvim-dap's configurations.
+
   - module: `dap`
   - opt: none
   - variable expansion: VsCode like variables
 
 - Legacy RC Loader (*builtin*)
   Loads tasks from old projector format (e.g. from init.lua)
+
   - module: `legacy.rc`
   - opt: none
   - variable expansion: VsCode like variables (e.g. `${file}`)
 
 - Legacy JSON Loader (*builtin*)
   Loads tasks from old `projector.json` file
+
   - module: `legacy.json`
   - opt:  `string`
     - `string`: path to old `projector.json` - [example](./examples/legacy-projector.json)
   - variable expansion: VsCode like variables (e.g. `${file}`)
 
 - tasks.json Loader (*kndndrj/projector-loader-vscode*)
+
   - module: `tasksjson`
   - opt:  `string`
     - `string`: path to `tasks.json` - default: `./.vscode/tasks.json`
   - variable expansion: VsCode like variables (e.g. `${file}`)
 
 - launch.json Loader (*kndndrj/projector-loader-vscode*)
+
   - module: `launchjson`
   - opt:  `string`
     - `string`: path to `launch.json` - default: `./.vscode/launch.json`
   - variable expansion: VsCode like variables (e.g. `${file}`)
 
 ### Outputs
+
 Outputs are modules that recieve a configuration object and run it's commands.
 They show the output on screen.
 
 (add to this list if you write your own)
 
 Available outputs:
+
 - Builtin output (*builtin*)
   Default task output (in the integrated terminal)
+
   - module: `builtin`
   - capabilities: `task`
 
 - DAP output (*builtin*)
   Default debug output with dap-ui support
+
   - module: `dap`
   - capabilities: `debug`
 
 - Dadbod output (*builtin*)
   Default database output with dadbod-ui support
+
   - module: `dadbod`
   - capabilities: `database`
 
 ## Issues
+
 If you encounter any issues, don't hesitate to open a github issue!
 A list of already known issues can be found in [KNOWN_ISSUES.md](./KNOWN_ISSUES.md),
 and what's planned for the near future can be read in [TODO.md](./TODO.md).

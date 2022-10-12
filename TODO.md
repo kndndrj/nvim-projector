@@ -7,6 +7,8 @@
     - [ ] .idea
 - [ ] Write more outputs:
     - [ ] floating
+    - [ ] external
+    - [ ] tmux
 - [x] Write documentation
 - [x] More descriptive method and variable names
 - [x] Make a propper configuration contract with descriptive names
@@ -18,4 +20,4 @@
 - [x] Allow nested action lists
 - [x] Stylua
 - [ ] Plenary tests
-- [ ] hidden tasks in task selector
+- [x] hidden tasks in task selector
