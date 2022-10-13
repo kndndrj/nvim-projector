@@ -1,20 +1,25 @@
 # Projector's Extensions
 
 Projector is designed in a way that writing extensions should be extremly easy.
-You can write extensions for loaders and/or outputs.
-If you decide to write any extensions, please document them in README.md
+You can write extensions for loaders and/or outputs. If you decide to write any
+extensions, please document them in README.md
 
 ## Custom Loader
 
-If you find that projector doesn't support the task file (whatever you may call tasks.json and stuff like that), write the loader as an extension for the projector. To do that, first create the same directory structure that projector uses:
+If you find that projector doesn't support the task file (whatever you may call
+tasks.json and stuff like that), write the loader as an extension for the
+projector. To do that, first create the same directory structure that projector
+uses:
 
 ```sh
 mkdir -p lua/projector/loaders/<unique-name-of-your-loader>.lua
 ```
 
-NOTE: To see the loader contract, look into [this file](./lua/projector/contract/loader.lua).
+NOTE: To see the loader contract, look into
+[this file](./lua/projector/contract/loader.lua).
 
-In that file, you need to implement a few methods that the loader "interface" requires. Here is a commented example:
+In that file, you need to implement a few methods that the loader "interface"
+requires. Here is a commented example:
 
 ```lua
 -- Get Task object and a Loader interface
@@ -79,7 +84,8 @@ end
 return MyLoader
 ```
 
-After that, your loader can be registered to projector via it's `setup()` function:
+After that, your loader can be registered to projector via it's `setup()`
+function:
 
 ```lua
 require 'projector'.setup {
@@ -104,15 +110,18 @@ require 'projector'.setup {
 
 ## Custom Output
 
-If you find that projector is lacking some functionality for tasks, you can create your own output (runner). First create a new file:
+If you find that projector is lacking some functionality for tasks, you can
+create your own output (runner). First create a new file:
 
 ```sh
 mkdir -p lua/projector/outputs/<unique-name-of-your-output>.lua
 ```
 
-NOTE: To see the output contract, look into [this file](./lua/projector/contract/output.lua).
+NOTE: To see the output contract, look into
+[this file](./lua/projector/contract/output.lua).
 
-In that file, you need to implement a few methods that the output "interface" requires. Here is a commented example:
+In that file, you need to implement a few methods that the output "interface"
+requires. Here is a commented example:
 
 ```lua
 -- Get the Output interface
@@ -205,7 +214,8 @@ end
 return MyOutput
 ```
 
-After that, your output can be registered to projector via it's `setup()` function:
+After that, your output can be registered to projector via it's `setup()`
+function:
 
 ```lua
 require 'projector'.setup {
@@ -229,7 +239,8 @@ require 'projector'.setup {
    function Output:list_actions() end
    ```
 2. Call `self:done(true|false)` once the command finishes.
-3. Set `self.status` according to the task. supported values are: `"visible"`, `"hidden"`, `"inactive"`
+3. Set `self.status` according to the task. supported values are: `"visible"`,
+   `"hidden"`, `"inactive"`
 4. You only need to care about simple configuration options. For example
    dependencies and post tasks are handled by projector. It's only important
    that you trigger `self:done()` when needed!

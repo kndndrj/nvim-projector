@@ -17,7 +17,7 @@ jobs:
           pip install mdformat-gfm
       - name: Markdown Style Check
         run: |
-          mdformat --number --check README.md EXTENSIONS.md
+          mdformat --number --wrap 80 --check README.md EXTENSIONS.md
 
   generate-docs:
     runs-on: ubuntu-20.04

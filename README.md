@@ -3,8 +3,7 @@
 Basic, yet extensible code-runner/project-configurator.
 
 **Run and manage tasks (shell commands) in nvim's integrated terminal!**
-**Integrates with nvim-dap!**
-**Configure vim-dadbod per-project**
+**Integrates with nvim-dap!** **Configure vim-dadbod per-project**
 
 ![Showcase](./assets/showcase.gif)
 
@@ -58,8 +57,8 @@ Overview:
 
 ## Installation
 
-Install this plugin with the plugin manager of your choice.
-Example with packer.nvim:
+Install this plugin with the plugin manager of your choice. Example with
+packer.nvim:
 
 ```lua
 use {
@@ -221,49 +220,50 @@ projector understands.
 
 Available loaders:
 
-- Builtin Loader *builtin*
-  Loads tasks from default configs. (useful for specifying tasks in init.lua)
+- Builtin Loader *builtin* Loads tasks from default configs. (useful for
+  specifying tasks in init.lua)
 
   - module: `builtin`
   - opt: `string | function | table`
-    - `string`: path to a projector.json file - [example](./examples/projector.json)
-    - `function`: a function that returns a list of [default config objects](#configuration-object).
+    - `string`: path to a projector.json file -
+      [example](./examples/projector.json)
+    - `function`: a function that returns a list of
+      [default config objects](#configuration-object).
     - `table`: a list of [default config objects](#configuration-object).
   - variable expansion: VsCode like variables (e.g. `${file}`)
 
-- DAP Loader (*builtin*)
-  Loads tasks from nvim-dap's configurations.
+- DAP Loader (*builtin*) Loads tasks from nvim-dap's configurations.
 
   - module: `dap`
   - opt: none
   - variable expansion: VsCode like variables
 
-- Legacy RC Loader (*builtin*)
-  Loads tasks from old projector format (e.g. from init.lua)
+- Legacy RC Loader (*builtin*) Loads tasks from old projector format (e.g. from
+  init.lua)
 
   - module: `legacy.rc`
   - opt: none
   - variable expansion: VsCode like variables (e.g. `${file}`)
 
-- Legacy JSON Loader (*builtin*)
-  Loads tasks from old `projector.json` file
+- Legacy JSON Loader (*builtin*) Loads tasks from old `projector.json` file
 
   - module: `legacy.json`
-  - opt:  `string`
-    - `string`: path to old `projector.json` - [example](./examples/legacy-projector.json)
+  - opt: `string`
+    - `string`: path to old `projector.json` -
+      [example](./examples/legacy-projector.json)
   - variable expansion: VsCode like variables (e.g. `${file}`)
 
 - tasks.json Loader (*kndndrj/projector-loader-vscode*)
 
   - module: `tasksjson`
-  - opt:  `string`
+  - opt: `string`
     - `string`: path to `tasks.json` - default: `./.vscode/tasks.json`
   - variable expansion: VsCode like variables (e.g. `${file}`)
 
 - launch.json Loader (*kndndrj/projector-loader-vscode*)
 
   - module: `launchjson`
-  - opt:  `string`
+  - opt: `string`
     - `string`: path to `launch.json` - default: `./.vscode/launch.json`
   - variable expansion: VsCode like variables (e.g. `${file}`)
 
@@ -276,26 +276,23 @@ They show the output on screen.
 
 Available outputs:
 
-- Builtin output (*builtin*)
-  Default task output (in the integrated terminal)
+- Builtin output (*builtin*) Default task output (in the integrated terminal)
 
   - module: `builtin`
   - capabilities: `task`
 
-- DAP output (*builtin*)
-  Default debug output with dap-ui support
+- DAP output (*builtin*) Default debug output with dap-ui support
 
   - module: `dap`
   - capabilities: `debug`
 
-- Dadbod output (*builtin*)
-  Default database output with dadbod-ui support
+- Dadbod output (*builtin*) Default database output with dadbod-ui support
 
   - module: `dadbod`
   - capabilities: `database`
 
 ## Issues
 
-If you encounter any issues, don't hesitate to open a github issue!
-A list of already known issues can be found in [KNOWN_ISSUES.md](./KNOWN_ISSUES.md),
-and what's planned for the near future can be read in [TODO.md](./TODO.md).
+If you encounter any issues, don't hesitate to open a github issue! A list of
+already known issues can be found in [KNOWN_ISSUES.md](./KNOWN_ISSUES.md), and
+what's planned for the near future can be read in [TODO.md](./TODO.md).
