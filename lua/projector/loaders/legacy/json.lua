@@ -76,12 +76,14 @@ local function write_new_json(tasks, path)
 end
 
 ---@type Loader
-local LegacyJsonLoader = Loader:new("legacy.json")
+local LegacyJsonLoader = Loader:new()
 
----@param opt string Path to legacy projector.json
 ---@return Task[]|nil
-function LegacyJsonLoader:load(opt)
-  local path = opt or (vim.fn.getcwd() .. "/.vim/projector.json")
+function LegacyJsonLoader:load()
+  ---@type { path: string }
+  local opts = self.user_opts
+
+  local path = opts.path or (vim.fn.getcwd() .. "/.vim/projector.json")
   if type(path) ~= "string" then
     utils.log("error", 'Got: "' .. type(path) .. '", want "string".', "Legacy JSON Loader")
     return

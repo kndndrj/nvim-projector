@@ -31,20 +31,21 @@ function Handler:load_sources()
 
   local tasks = {}
   -- Load all tasks from different loaders
-  for _, loader in pairs(config.loaders) do
-    ---@type boolean, Loader
-    local ok, l = pcall(require, "projector.loaders." .. loader.module)
+  for _, loader_config in pairs(config.loaders) do
+    local ok, l = pcall(require, "projector.loaders." .. loader_config.module)
     if ok then
-      local ts = l:load(loader.opt)
+      ---@type Loader
+      local loader = l:new({ user_opts = loader_config.options })
+      local ts = loader:load()
       if ts then
         for _, t in pairs(ts) do
           t:set_expand_variables(function(c)
-            return l:expand_variables(c)
+            return loader:expand_variables(c)
           end)
           table.insert(tasks, t)
           -- Insert icons/names into lookup table
           self.displays[t.meta.id] = utils.map_icons {
-            loader = l.name,
+            loader = loader_config.module,
             scope = t.meta.scope,
             group = t.meta.group,
             name = t.meta.name,

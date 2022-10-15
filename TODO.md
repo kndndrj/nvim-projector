@@ -21,3 +21,4 @@
 - [x] Stylua
 - [ ] Plenary tests
 - [x] hidden tasks in task selector
+- [ ] Make the plugin OS-agnostic

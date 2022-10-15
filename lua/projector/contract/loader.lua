@@ -1,20 +1,20 @@
 ---@class Loader
----@field name string
+---@field user_opts any User options that can be used by extension authors
 local Loader = {}
 
-function Loader:new(name)
+---@param opts? { user_opts: any }
+function Loader:new(opts)
+  opts = opts or {}
   local o = {
-    name = name or "[empty loader name]",
+    user_opts = opts.user_opts or {},
   }
   setmetatable(o, self)
   self.__index = self
   return o
 end
 
----@param opt any
 ---@return Task[]|nil
----@diagnostic disable-next-line: unused-local
-function Loader:load(opt)
+function Loader:load()
   error("not_implemented")
 end
 

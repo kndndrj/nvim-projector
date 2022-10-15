@@ -172,9 +172,9 @@ function Task:run(mode, on_success, on_problem)
   revert_dep_statuses()
 
   -- create a new output
-  local o = require("projector").config.outputs
+  local output_config = require("projector").config.outputs[mode]
   ---@type boolean, Output
-  local ok, Output = pcall(require, "projector.outputs." .. o[mode])
+  local ok, Output = pcall(require, "projector.outputs." .. output_config.module)
   if not ok then
     utils.log("error", 'Output for "' .. mode .. '" mode could not be created.', "Task " .. self.meta.name)
     on_problem()
@@ -194,6 +194,7 @@ function Task:run(mode, on_success, on_problem)
   ---@type Output
   local output = Output:new {
     name = self.meta.name,
+    user_opts = output_config.options,
     on_success = callback_success,
     on_problem = on_problem,
   }

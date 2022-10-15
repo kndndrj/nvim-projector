@@ -2,7 +2,7 @@ local Task = require("projector.task")
 local Loader = require("projector.contract.loader")
 
 ---@type Loader
-local DapLoader = Loader:new("dap")
+local DapLoader = Loader:new()
 
 ---@return Task[]|nil
 function DapLoader:load()

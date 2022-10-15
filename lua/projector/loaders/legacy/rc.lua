@@ -6,7 +6,6 @@ local utils = require("projector.utils")
 local asked = false
 -- Convert old file to new format
 ---@param tasks Task[]
----@param path string
 local function convert_config(tasks)
   if asked then
     return
@@ -40,7 +39,7 @@ local function convert_config(tasks)
 end
 
 ---@type Loader
-local LegacyRcLoader = Loader:new("legacy.rc")
+local LegacyRcLoader = Loader:new()
 
 ---@return Task[]|nil
 function LegacyRcLoader:load()

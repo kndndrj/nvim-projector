@@ -30,16 +30,21 @@ local Loader = require 'projector.contract.loader'
 
 -- Create a new loader
 ---@type Loader
-local MyLoader = Loader:new("myloader") -- add the name to be displayed in the task selector menu,
-                                        -- I suggest it to be the same as the name of this file
+local MyLoader = Loader:new()
 
 -- Implement a "load" method
--- use anything you like as opt, but make sure to specify it in the documentation.
----@param opt string Path to myformat.xml file
+-- Use anything you like as user_opts, but make sure to specify them in the documentation.
+-- I suggest, you use a table with parameters (see below).
+-- Access those options with self.user_opts (these are the options specifed by the end user in setup())
+
 -- return type should always be a list of Task objects or nil if nothing is loaded
 ---@return Task[]|nil
-function MyLoader:load(opt)
-  local path = opt or (vim.fn.getcwd() .. '/.myformat.xml')
+function MyLoader:load()
+  -- access opts with:
+  ---@type { path: string }
+  local opts = self.user_opts
+
+  local path = opts.path or (vim.fn.getcwd() .. '/.myformat.xml')
 
   local data = load_xml_file_into_lua_table()
 
@@ -94,7 +99,9 @@ require 'projector'.setup {
   loaders = {
     {
       module = '<unique-name-of-your-loader>', -- name of your file in lua require syntax
-      opt = vim.fn.getcwd() .. '/.misc/tasks.xml', -- argument to your "load" method
+      options = { -- argument to your "load" method
+        path = vim.fn.getcwd() .. '/.misc/tasks.xml',
+      },
     },
   },
   -- ...
@@ -103,10 +110,10 @@ require 'projector'.setup {
 
 **In short**:
 
-1. Assign a name to your loader.
+1. Create a new loader.
 2. Implement these methods:
    ```lua
-   function Loader:load(opt) end
+   function Loader:load() end
    function Loader:expand_variables(configuration) end
    ```
 
@@ -133,11 +140,18 @@ local Output = require 'projector.contract.output'
 ---@type Output
 local MyOutput = Output:new()
 
+-- You can use specific options, but make sure to specify them in the documentation.
+-- I suggest, you use a table with parameters, like:
+-- { height: string } window height
+-- Access those options with self.user_opts (these are the options specifed by the end user in setup())
+
 -- Init method gets task's configuration and runs it
 -- For available fields, see the configuration object specification in README.md
 ---@param configuration Configuration
 ---@diagnostic disable-next-line: unused-local
 function MyOutput:init(configuration)
+  self.user_opts.height = tostring(self.user_opts.height) or "15"
+
   local term_options = {
     env = configuration.env,
     on_exit = function(_, code)
@@ -150,7 +164,7 @@ function MyOutput:init(configuration)
   }
 
   -- Start the output
-  vim.api.nvim_command('bo 15new')
+  vim.api.nvim_command('bo ' .. self.user_opts.height .. 'new')
   vim.fn.termopen(configuration.command, term_options)
 
   -- You can use "meta" field to store any private info you need
@@ -162,11 +176,9 @@ function MyOutput:init(configuration)
 end
 
 function MyOutput:show()
-  vim.api.nvim_command('bo 15new')
-
   -- show the output on screen if it isn't visible
   -- For example: open a new window and open the buffer in it
-  vim.api.nvim_command('15split')
+  vim.api.nvim_command(self.user_opts.height .. 'split')
   self.meta.winid = vim.fn.win_getid()
   vim.api.nvim_command('b ' .. self.meta.bufnr)
 
@@ -222,9 +234,12 @@ function:
 ```lua
 require 'projector'.setup {
   outputs = {
-    task = '<unique-name-of-your-loader>', -- name of your file in lua require syntax
-    -- or debug = '<unique-name-of-your-loader>',
-    -- or database = '<unique-name-of-your-loader>',
+    task = {
+      module = '<unique-name-of-your-loader>', -- name of your file in lua require syntax
+      options = {}, -- what's supplied to self.user_opts
+    },
+    -- or debug = ...
+    -- or database = ...
   },
   -- ...
 }

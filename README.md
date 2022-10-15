@@ -122,22 +122,36 @@ The setup function takes an optional table parameter. Here are the defaults:
 
 ```lua
 local config = {
-  -- array of loader names with parameters (for available loaders see "Loaders" section in README.md)
+  -- array of loader names with parameters
+  -- for available loaders and their options see "Loaders" section in README.md
   loaders = {
     {
-      module = 'builtin',
-      opt = vim.fn.getcwd() .. '/.vim/projector.json',
+      module = "builtin",
+      options = {
+        path = vim.fn.getcwd() .. "/.vim/projector.json",
+        configs = nil,
+      },
     },
     {
-      module = 'dap',
-      opt = '',
+      module = "dap",
+      options = nil,
     },
   },
-  -- map of outputs per mode (for available outputs see "Outputs" section in README.md)
+  -- map of outputs per mode
+  -- for available outputs and their options see "Outputs" section in README.md
   outputs = {
-    task = 'builtin',
-    debug = 'dap',
-    database = 'dadbod',
+    task = {
+      module = "builtin",
+      options = nil,
+    },
+    debug = {
+      module = "dap",
+      options = nil,
+    },
+    database = {
+      module = "dadbod",
+      options = nil,
+    },
   },
   -- function that formats the task selector output
   display_format = function(loader, scope, group, modes, name)
@@ -231,47 +245,43 @@ Available loaders:
   specifying tasks in init.lua)
 
   - module: `builtin`
-  - opt: `string | function | table`
-    - `string`: path to a projector.json file -
-      [example](./examples/projector.json)
-    - `function`: a function that returns a list of
-      [default config objects](#configuration-object).
-    - `table`: a list of [default config objects](#configuration-object).
+  - options:
+    - `path` - *string*: path to a projector.json file - [example](./examples/projector.json)
+    - `configs` - *function*|*table*: a function that returns a list of [default config objects](#configuration-object) OR a list of [default config objects](#configuration-object).
   - variable expansion: VsCode like variables (e.g. `${file}`)
 
 - DAP Loader (*builtin*) Loads tasks from nvim-dap's configurations.
 
   - module: `dap`
-  - opt: none
-  - variable expansion: VsCode like variables
+  - options: `nil`
+  - variable expansion: VsCode like variables (e.g. `${file}`)
 
 - Legacy RC Loader (*builtin*) Loads tasks from old projector format (e.g. from
   init.lua)
 
   - module: `legacy.rc`
-  - opt: none
+  - options: `nil`
   - variable expansion: VsCode like variables (e.g. `${file}`)
 
 - Legacy JSON Loader (*builtin*) Loads tasks from old `projector.json` file
 
   - module: `legacy.json`
-  - opt: `string`
-    - `string`: path to old `projector.json` -
-      [example](./examples/legacy-projector.json)
+  - options:
+    - `path` - *string*: path to old `projector.json` - [example](./examples/legacy-projector.json)
   - variable expansion: VsCode like variables (e.g. `${file}`)
 
 - tasks.json Loader (*kndndrj/projector-loader-vscode*)
 
   - module: `tasksjson`
-  - opt: `string`
-    - `string`: path to `tasks.json` - default: `./.vscode/tasks.json`
+  - options:
+    - `path` - *string*: path to `tasks.json` - default: `./.vscode/tasks.json`
   - variable expansion: VsCode like variables (e.g. `${file}`)
 
 - launch.json Loader (*kndndrj/projector-loader-vscode*)
 
   - module: `launchjson`
-  - opt: `string`
-    - `string`: path to `launch.json` - default: `./.vscode/launch.json`
+  - options:
+    - `path` - *string*: path to `launch.json` - default: `./.vscode/launch.json`
   - variable expansion: VsCode like variables (e.g. `${file}`)
 
 ### Outputs
@@ -286,16 +296,19 @@ Available outputs:
 - Builtin output (*builtin*) Default task output (in the integrated terminal)
 
   - module: `builtin`
+  - options: `nil`
   - capabilities: `task`
 
 - DAP output (*builtin*) Default debug output with dap-ui support
 
   - module: `dap`
+  - options: `nil`
   - capabilities: `debug`
 
 - Dadbod output (*builtin*) Default database output with dadbod-ui support
 
   - module: `dadbod`
+  - options: `nil`
   - capabilities: `database`
 
 ## Issues
