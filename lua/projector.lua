@@ -68,6 +68,21 @@ function M.setup(config)
     end
   end
 
+  -- TODO: remove
+  local opt_detected = false
+  for _, l in pairs(M.config.loaders) do
+    if l.opt then
+      opt_detected = true
+    end
+  end
+  if opt_detected then
+    utils.log(
+      "warn",
+      'Breaking changes detected:\nloaders.opt parameter was changed to loaders.options.\n\nSee "Loaders" section in README.md for more info on how to migrate the config!',
+      "setup()"
+    )
+  end
+
   ---@type Handler
   handler = Handler:new()
   handler:load_sources()
