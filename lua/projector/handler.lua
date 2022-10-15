@@ -35,7 +35,7 @@ function Handler:load_sources()
     local ok, l = pcall(require, "projector.loaders." .. loader_config.module)
     if ok then
       ---@type Loader
-      local loader = l:new({ user_opts = loader_config.options })
+      local loader = l:new { user_opts = loader_config.options }
       local ts = loader:load()
       if ts then
         for _, t in pairs(ts) do

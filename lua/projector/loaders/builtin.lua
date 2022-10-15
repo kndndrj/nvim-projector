@@ -11,7 +11,7 @@ function BuiltinLoader:load()
   ---@type { path: string, configs: Configuration[]|fun():Configuration[] }
   local opts = self.user_opts or {
     path = vim.fn.getcwd() .. "/.vim/projector.json",
-    configs = nil
+    configs = nil,
   }
 
   ---@type Task[]
