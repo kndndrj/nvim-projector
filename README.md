@@ -1,9 +1,16 @@
+<img src="assets/logo.svg" alt="Projector logo" title="Projector" align="center" height="200"/>
+
+<!-- Any html tags, badges etc. go before this tag. -->
+<!--docgen-start-->
 # Neovim Projector
 
 Basic, yet extensible code-runner/project-configurator.
 
 **Run and manage tasks (shell commands) in nvim's integrated terminal!**
-**Integrates with nvim-dap!** **Configure vim-dadbod per-project**
+
+**Integrates with nvim-dap!**
+
+**Configure vim-dadbod per-project**
 
 ![Showcase](./assets/showcase.gif)
 
@@ -115,7 +122,7 @@ The setup function takes an optional table parameter. Here are the defaults:
 
 ```lua
 local config = {
-  -- array of loader names with parameters (for available outputs see LOADERS.md)
+  -- array of loader names with parameters (for available loaders see "Loaders" section in README.md)
   loaders = {
     {
       module = 'builtin',
@@ -126,7 +133,7 @@ local config = {
       opt = '',
     },
   },
-  -- map of outputs per mode (for available outputs see OUTPUTS.md)
+  -- map of outputs per mode (for available outputs see "Outputs" section in README.md)
   outputs = {
     task = 'builtin',
     debug = 'dap',

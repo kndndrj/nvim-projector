@@ -31,7 +31,7 @@ jobs:
           tar -xzvf md2vim.tar.gz
       - name: Generate Vim Help from Markdown
         run: |
-          ./md2vim -desc "Basic, yet extensible code-runner/project-configurator" <(cat README.md EXTENSIONS.md) doc/projector.txt
+          ./md2vim -desc "Basic, yet extensible code-runner/project-configurator" <(sed '0,/docgen-start/d' README.md; sed '0,/docgen-start/d' EXTENSIONS.md) doc/projector.txt
       - name: Commit the Generated Help
         uses: EndBug/add-and-commit@v9
         with:
