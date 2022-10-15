@@ -1,7 +1,9 @@
 <img src="assets/logo.svg" alt="Projector logo" title="Projector" align="center" height="200"/>
 
 <!-- Any html tags, badges etc. go before this tag. -->
+
 <!--docgen-start-->
+
 # Neovim Projector
 
 Basic, yet extensible code-runner/project-configurator.
@@ -246,8 +248,11 @@ Available loaders:
 
   - module: `builtin`
   - options:
-    - `path` - *string*: path to a projector.json file - [example](./examples/projector.json)
-    - `configs` - *function*|*table*: a function that returns a list of [default config objects](#configuration-object) OR a list of [default config objects](#configuration-object).
+    - `path` - *string*: path to a projector.json file -
+      [example](./examples/projector.json)
+    - `configs` - *function*|*table*: a function that returns a list of
+      [default config objects](#configuration-object) OR a list of
+      [default config objects](#configuration-object).
   - variable expansion: VsCode like variables (e.g. `${file}`)
 
 - DAP Loader (*builtin*) Loads tasks from nvim-dap's configurations.
@@ -267,7 +272,8 @@ Available loaders:
 
   - module: `legacy.json`
   - options:
-    - `path` - *string*: path to old `projector.json` - [example](./examples/legacy-projector.json)
+    - `path` - *string*: path to old `projector.json` -
+      [example](./examples/legacy-projector.json)
   - variable expansion: VsCode like variables (e.g. `${file}`)
 
 - tasks.json Loader (*kndndrj/projector-loader-vscode*)
@@ -281,7 +287,8 @@ Available loaders:
 
   - module: `launchjson`
   - options:
-    - `path` - *string*: path to `launch.json` - default: `./.vscode/launch.json`
+    - `path` - *string*: path to `launch.json` - default:
+      `./.vscode/launch.json`
   - variable expansion: VsCode like variables (e.g. `${file}`)
 
 ### Outputs

@@ -1,5 +1,7 @@
 <!-- Any html tags, badges etc. go before this tag. -->
+
 <!--docgen-start-->
+
 # Projector's Extensions
 
 Projector is designed in a way that writing extensions should be extremly easy.
