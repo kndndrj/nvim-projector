@@ -20,30 +20,28 @@ function BuiltinLoader:load()
   -- parse json file
   if opts.path then
     local path = opts.path
-    if not vim.loop.fs_stat(path) then
-      -- TODO?: file not found error
-      return
-    end
-
-    local lines = {}
-    for line in io.lines(path) do
-      if not vim.startswith(vim.trim(line), "//") then
-        table.insert(lines, line)
+    -- TODO?: file not found error
+    if vim.loop.fs_stat(path) then
+      local lines = {}
+      for line in io.lines(path) do
+        if not vim.startswith(vim.trim(line), "//") then
+          table.insert(lines, line)
+        end
       end
-    end
 
-    local contents = table.concat(lines, "\n")
-    local ok, data = pcall(vim.fn.json_decode, contents)
-    if not ok then
-      utils.log("error", 'Could not parse json file: "' .. path .. '".', "Builtin Loader")
-      return
-    end
+      local contents = table.concat(lines, "\n")
+      local ok, data = pcall(vim.fn.json_decode, contents)
+      if not ok then
+        utils.log("error", 'Could not parse json file: "' .. path .. '".', "Builtin Loader")
+        return
+      end
 
-    ---@type _, Configuration
-    for _, config in pairs(data) do
-      local task_opts = { scope = "project", group = config.group }
-      local task = Task:new(config, task_opts)
-      table.insert(tasks, task)
+      ---@type _, Configuration
+      for _, config in pairs(data) do
+        local task_opts = { scope = "project", group = config.group }
+        local task = Task:new(config, task_opts)
+        table.insert(tasks, task)
+      end
     end
   end
 

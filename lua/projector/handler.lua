@@ -60,7 +60,10 @@ function Handler:load_sources()
   -- and create a task id lookup table
   local ids = {}
   for _, t in pairs(tasks) do
-    self.tasks[t.meta.id] = t
+    -- don't update live tasks
+    if not self.tasks[t.meta.id] or not self.tasks[t.meta.id]:is_live() then
+      self.tasks[t.meta.id] = t
+    end
     table.insert(ids, t.meta.id)
   end
   -- sort the lookup table alphanumerically
@@ -158,8 +161,8 @@ function Handler:select_and_run(override_hidden)
     if #id_selection < #self.id_lookup then
       table.insert(id_selection, "show_all")
     end
-  else
-    -- show all tasks
+  end
+  if #id_selection < 2 then
     id_selection = self.id_lookup
   end
 
