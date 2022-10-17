@@ -1,4 +1,4 @@
-<img src="assets/logo.svg" alt="Projector logo" title="Projector" align="center" height="200"/>
+<img src="assets/logo.svg" alt="Projector logo" title="Projector" align="right" height="200"/>
 
 <!-- Any html tags, badges etc. go before this tag. -->
 
