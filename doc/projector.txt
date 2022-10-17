@@ -24,7 +24,10 @@ NEOVIM PROJECTOR                                      *projector-neovim_projecto
 Basic, yet extensible code-runner/project-configurator.
 
 Run and manage tasks (shell commands) in nvim's integrated terminal!
-Integrates with nvim-dap! Configure vim-dadbod per-project
+
+Integrates with nvim-dap!
+
+Configure vim-dadbod per-project
 
 
 
@@ -130,22 +133,36 @@ SETUP                                                            *projector-setu
 The setup function takes an optional table parameter. Here are the defaults:
 >
     local config = {
-      -- array of loader names with parameters (for available outputs see LOADERS.md)
+      -- array of loader names with parameters
+      -- for available loaders and their options see "Loaders" section in README.md
       loaders = {
         {
-          module = 'builtin',
-          opt = vim.fn.getcwd() .. '/.vim/projector.json',
+          module = "builtin",
+          options = {
+            path = vim.fn.getcwd() .. "/.vim/projector.json",
+            configs = nil,
+          },
         },
         {
-          module = 'dap',
-          opt = '',
+          module = "dap",
+          options = nil,
         },
       },
-      -- map of outputs per mode (for available outputs see OUTPUTS.md)
+      -- map of outputs per mode
+      -- for available outputs and their options see "Outputs" section in README.md
       outputs = {
-        task = 'builtin',
-        debug = 'dap',
-        database = 'dadbod',
+        task = {
+          module = "builtin",
+          options = nil,
+        },
+        debug = {
+          module = "dap",
+          options = nil,
+        },
+        database = {
+          module = "dadbod",
+          options = nil,
+        },
       },
       -- function that formats the task selector output
       display_format = function(loader, scope, group, modes, name)
@@ -238,37 +255,38 @@ Available loaders:
 *   Builtin Loader builtin Loads tasks from default configs. (useful for
     specifying tasks in init.lua)
     *   module: `builtin`
-    *   opt: `string | function | table`
-    *   `string`: path to a projector.json file -
+    *   options:
+    *   `path` - string: path to a projector.json file -
         example (./examples/projector.json)
-    *   `function`: a function that returns a list of
+    *   `configs` - function|table: a function that returns a list of
+        default config objects (#configuration-object) OR a list of
         default config objects (#configuration-object).
-    *   `table`: a list of default config objects (#configuration-object).
     *   variable expansion: VsCode like variables (e.g. `${file}`)
 *   DAP Loader (builtin) Loads tasks from nvim-dap's configurations.
     *   module: `dap`
-    *   opt: none
-    *   variable expansion: VsCode like variables
+    *   options: `nil`
+    *   variable expansion: VsCode like variables (e.g. `${file}`)
 *   Legacy RC Loader (builtin) Loads tasks from old projector format (e.g. from
     init.lua)
     *   module: `legacy.rc`
-    *   opt: none
+    *   options: `nil`
     *   variable expansion: VsCode like variables (e.g. `${file}`)
 *   Legacy JSON Loader (builtin) Loads tasks from old `projector.json` file
     *   module: `legacy.json`
-    *   opt: `string`
-    *   `string`: path to old `projector.json` -
+    *   options:
+    *   `path` - string: path to old `projector.json` -
         example (./examples/legacy-projector.json)
     *   variable expansion: VsCode like variables (e.g. `${file}`)
 *   tasks.json Loader (kndndrj/projector-loader-vscode)
     *   module: `tasksjson`
-    *   opt: `string`
-    *   `string`: path to `tasks.json` - default: `./.vscode/tasks.json`
+    *   options:
+    *   `path` - string: path to `tasks.json` - default: `./.vscode/tasks.json`
     *   variable expansion: VsCode like variables (e.g. `${file}`)
 *   launch.json Loader (kndndrj/projector-loader-vscode)
     *   module: `launchjson`
-    *   opt: `string`
-    *   `string`: path to `launch.json` - default: `./.vscode/launch.json`
+    *   options:
+    *   `path` - string: path to `launch.json` - default:
+        `./.vscode/launch.json`
     *   variable expansion: VsCode like variables (e.g. `${file}`)
 
 OUTPUTS                                                        *projector-outputs*
@@ -282,12 +300,15 @@ Available outputs:
 
 *   Builtin output (builtin) Default task output (in the integrated terminal)
     *   module: `builtin`
+    *   options: `nil`
     *   capabilities: `task`
 *   DAP output (builtin) Default debug output with dap-ui support
     *   module: `dap`
+    *   options: `nil`
     *   capabilities: `debug`
 *   Dadbod output (builtin) Default database output with dadbod-ui support
     *   module: `dadbod`
+    *   options: `nil`
     *   capabilities: `database`
 
 --------------------------------------------------------------------------------
@@ -326,15 +347,18 @@ requires. Here is a commented example:
     local Loader = require 'projector.contract.loader'
     -- Create a new loader
     ---@type Loader
-    local MyLoader = Loader:new("myloader") -- add the name to be displayed in the task selector menu,
-                                            -- I suggest it to be the same as the name of this file
+    local MyLoader = Loader:new()
     -- Implement a "load" method
-    -- use anything you like as opt, but make sure to specify it in the documentation.
-    ---@param opt string Path to myformat.xml file
+    -- Use anything you like as user_opts, but make sure to specify them in the documentation.
+    -- I suggest, you use a table with parameters (see below).
+    -- Access those options with self.user_opts (these are the options specifed by the end user in setup())
     -- return type should always be a list of Task objects or nil if nothing is loaded
     ---@return Task[]|nil
-    function MyLoader:load(opt)
-      local path = opt or (vim.fn.getcwd() .. '/.myformat.xml')
+    function MyLoader:load()
+      -- access opts with:
+      ---@type { path: string }
+      local opts = self.user_opts
+      local path = opts.path or (vim.fn.getcwd() .. '/.myformat.xml')
       local data = load_xml_file_into_lua_table()
       -- List to return
       ---@type Task[]
@@ -382,7 +406,9 @@ function:
       loaders = {
         {
           module = '<unique-name-of-your-loader>', -- name of your file in lua require syntax
-          opt = vim.fn.getcwd() .. '/.misc/tasks.xml', -- argument to your "load" method
+          options = { -- argument to your "load" method
+            path = vim.fn.getcwd() .. '/.misc/tasks.xml',
+          },
         },
       },
       -- ...
@@ -391,10 +417,10 @@ function:
 
 In short:
 
-1.  Assign a name to your loader.
+1.  Create a new loader.
 2.  Implement these methods:
 >
-        function Loader:load(opt) end
+        function Loader:load() end
         function Loader:expand_variables(configuration) end
 <
 
@@ -418,11 +444,16 @@ requires. Here is a commented example:
     -- Create a new output
     ---@type Output
     local MyOutput = Output:new()
+    -- You can use specific options, but make sure to specify them in the documentation.
+    -- I suggest, you use a table with parameters, like:
+    -- { height: string } window height
+    -- Access those options with self.user_opts (these are the options specifed by the end user in setup())
     -- Init method gets task's configuration and runs it
     -- For available fields, see the configuration object specification in README.md
     ---@param configuration Configuration
     ---@diagnostic disable-next-line: unused-local
     function MyOutput:init(configuration)
+      self.user_opts.height = tostring(self.user_opts.height) or "15"
       local term_options = {
         env = configuration.env,
         on_exit = function(_, code)
@@ -434,7 +465,7 @@ requires. Here is a commented example:
         end,
       }
       -- Start the output
-      vim.api.nvim_command('bo 15new')
+      vim.api.nvim_command('bo ' .. self.user_opts.height .. 'new')
       vim.fn.termopen(configuration.command, term_options)
       -- You can use "meta" field to store any private info you need
       self.meta.bufnr = vim.fn.bufnr()
@@ -443,10 +474,9 @@ requires. Here is a commented example:
       self.status = "visible"
     end
     function MyOutput:show()
-      vim.api.nvim_command('bo 15new')
       -- show the output on screen if it isn't visible
       -- For example: open a new window and open the buffer in it
-      vim.api.nvim_command('15split')
+      vim.api.nvim_command(self.user_opts.height .. 'split')
       self.meta.winid = vim.fn.win_getid()
       vim.api.nvim_command('b ' .. self.meta.bufnr)
       self.status = "visible"
@@ -494,9 +524,12 @@ function:
 >
     require 'projector'.setup {
       outputs = {
-        task = '<unique-name-of-your-loader>', -- name of your file in lua require syntax
-        -- or debug = '<unique-name-of-your-loader>',
-        -- or database = '<unique-name-of-your-loader>',
+        task = {
+          module = '<unique-name-of-your-loader>', -- name of your file in lua require syntax
+          options = {}, -- what's supplied to self.user_opts
+        },
+        -- or debug = ...
+        -- or database = ...
       },
       -- ...
     }
