@@ -8,11 +8,9 @@
 
 Basic, yet extensible code-runner/project-configurator.
 
-**Run and manage tasks (shell commands) in nvim's integrated terminal!**
-
-**Integrates with nvim-dap!**
-
-**Configure vim-dadbod per-project**
+- **Run and manage tasks (shell commands) in nvim's integrated terminal!**
+- **Integrates with nvim-dap!**
+- **Configure vim-dadbod per-project**
 
 ![Showcase](./assets/showcase.gif)
 
@@ -180,7 +178,7 @@ local config = {
 }
 ```
 
-#### Configuration Object
+### Configuration Object
 
 This is a configuration for a task that projector can read.
 
@@ -243,7 +241,7 @@ projector understands.
 
 Available loaders:
 
-- Builtin Loader *builtin* Loads tasks from default configs. (useful for
+- Builtin Loader (*builtin*) Loads tasks from default configs. (useful for
   specifying tasks in init.lua)
 
   - module: `builtin`
@@ -259,21 +257,6 @@ Available loaders:
 
   - module: `dap`
   - options: `nil`
-  - variable expansion: VsCode like variables (e.g. `${file}`)
-
-- Legacy RC Loader (*builtin*) Loads tasks from old projector format (e.g. from
-  init.lua)
-
-  - module: `legacy.rc`
-  - options: `nil`
-  - variable expansion: VsCode like variables (e.g. `${file}`)
-
-- Legacy JSON Loader (*builtin*) Loads tasks from old `projector.json` file
-
-  - module: `legacy.json`
-  - options:
-    - `path` - *string*: path to old `projector.json` -
-      [example](./examples/legacy-projector.json)
   - variable expansion: VsCode like variables (e.g. `${file}`)
 
 - tasks.json Loader (*kndndrj/projector-loader-vscode*)
