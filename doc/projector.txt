@@ -9,7 +9,7 @@ CONTENTS                                                      *projector-content
     1.2. Installation.....................................|projector-installation|
     1.3. Getting started...............................|projector-getting_started|
     1.4. Setup...................................................|projector-setup|
-            1.4.1. Configuration Object...........|projector-configuration_object|
+        1.4.1. Configuration Object...............|projector-configuration_object|
     1.5. Loaders and Outputs.......................|projector-loaders_and_outputs|
         1.5.1. Loaders.........................................|projector-loaders|
         1.5.2. Outputs.........................................|projector-outputs|
@@ -23,11 +23,9 @@ NEOVIM PROJECTOR                                      *projector-neovim_projecto
 
 Basic, yet extensible code-runner/project-configurator.
 
-Run and manage tasks (shell commands) in nvim's integrated terminal!
-
-Integrates with nvim-dap!
-
-Configure vim-dadbod per-project
+*   Run and manage tasks (shell commands) in nvim's integrated terminal!
+*   Integrates with nvim-dap!
+*   Configure vim-dadbod per-project
 
 
 
@@ -252,7 +250,7 @@ projector understands.
 
 Available loaders:
 
-*   Builtin Loader builtin Loads tasks from default configs. (useful for
+*   Builtin Loader (builtin) Loads tasks from default configs. (useful for
     specifying tasks in init.lua)
     *   module: `builtin`
     *   options:
@@ -265,17 +263,6 @@ Available loaders:
 *   DAP Loader (builtin) Loads tasks from nvim-dap's configurations.
     *   module: `dap`
     *   options: `nil`
-    *   variable expansion: VsCode like variables (e.g. `${file}`)
-*   Legacy RC Loader (builtin) Loads tasks from old projector format (e.g. from
-    init.lua)
-    *   module: `legacy.rc`
-    *   options: `nil`
-    *   variable expansion: VsCode like variables (e.g. `${file}`)
-*   Legacy JSON Loader (builtin) Loads tasks from old `projector.json` file
-    *   module: `legacy.json`
-    *   options:
-    *   `path` - string: path to old `projector.json` -
-        example (./examples/legacy-projector.json)
     *   variable expansion: VsCode like variables (e.g. `${file}`)
 *   tasks.json Loader (kndndrj/projector-loader-vscode)
     *   module: `tasksjson`
