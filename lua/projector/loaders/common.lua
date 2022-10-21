@@ -23,7 +23,7 @@ function M.expand_config_variables(option)
   }
   local ret = option
   for key, val in pairs(variables) do
-    ret = ret:gsub("${" .. key .. "}", val)
+    ret = ret:gsub("%${" .. key .. "}", val)
   end
   return ret
 end
