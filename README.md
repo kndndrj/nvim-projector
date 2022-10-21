@@ -274,6 +274,16 @@ Available loaders:
       `./.vscode/launch.json`
   - variable expansion: VsCode like variables (e.g. `${file}`)
 
+- Idea Loader (*kndndrj/projector-loader-idea*)
+
+  - module: `idea`
+  - options:
+    - `path` - *string*: path to `workspace.xml` - default:
+      `./.idea/workspace.xml`
+  - variable expansion: Idea's variables (e.g. `$PROJECT_DIR$`)
+  - requirements:
+    - `xml2lua` (luarocks)
+
 ### Outputs
 
 Outputs are modules that recieve a configuration object and run it's commands.
