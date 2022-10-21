@@ -1,0 +1,24 @@
+# TODOs
+- [x] Add table option to loaders - to specify tasks in init.lua
+- [ ] Write more loaders:
+    - [ ] package.json
+    - [x] launch.json
+    - [x] tasks.json
+    - [ ] .idea
+- [ ] Write more outputs:
+    - [ ] floating
+    - [ ] external
+    - [ ] tmux
+- [x] Write documentation
+- [x] More descriptive method and variable names
+- [x] Make a propper configuration contract with descriptive names
+- [x] Prettier task selector output
+- [x] Automatic config reload
+- [x] Replace print with vim.notify
+- [x] Post run task
+- [x] Long running tasks ready-matcher
+- [x] Allow nested action lists
+- [x] Stylua
+- [ ] Plenary tests
+- [x] hidden tasks in task selector
+- [ ] Make the plugin OS-agnostic
