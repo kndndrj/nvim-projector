@@ -163,7 +163,8 @@ function Task:run(mode, on_success, on_problem)
         on_problem()
         revert_dep_statuses()
       end
-      -- Run the dependency in task mode
+      -- Run the dependency in task mode (restart it if already running)
+      dep.task:kill_output()
       dep.task:run("task", callback_success, callback_problem)
       return
     end
