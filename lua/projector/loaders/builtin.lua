@@ -8,19 +8,18 @@ local BuiltinLoader = Loader:new()
 
 ---@return Task[]|nil
 function BuiltinLoader:load()
-  ---@type { path: string, configs: Configuration[]|fun():Configuration[] }
+  ---@type { path: string, configs: task_configuration[]|fun():task_configuration[] }
   local opts = self.user_opts or {
     path = vim.fn.getcwd() .. "/.vim/projector.json",
     configs = nil,
   }
 
-  ---@type Task[]
-  local tasks = {}
+  ---@type task_configuration[]
+  local cfgs = {}
 
   -- parse json file
   if opts.path then
     local path = opts.path
-    -- TODO?: file not found error
     if vim.loop.fs_stat(path) then
       local lines = {}
       for line in io.lines(path) do
@@ -36,12 +35,7 @@ function BuiltinLoader:load()
         return
       end
 
-      ---@type _, Configuration
-      for _, config in pairs(data) do
-        local task_opts = { scope = "project", group = config.group }
-        local task = Task:new(config, task_opts)
-        table.insert(tasks, task)
-      end
+      vim.list_extend(cfgs, data)
     end
   end
 
@@ -54,19 +48,14 @@ function BuiltinLoader:load()
       data = opts.configs
     end
 
-    ---@type _, Configuration
-    for _, config in pairs(data) do
-      local task_opts = { scope = "global", group = config.group }
-      local task = Task:new(config, task_opts)
-      table.insert(tasks, task)
-    end
+    vim.list_extend(cfgs, data)
   end
 
-  return tasks
+  return cfgs
 end
 
----@param configuration Configuration
----@return Configuration
+---@param configuration task_configuration
+---@return task_configuration
 function BuiltinLoader:expand_variables(configuration)
   return vim.tbl_map(common.expand_config_variables, configuration)
 end

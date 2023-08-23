@@ -10,31 +10,31 @@
 ---@type config
 local config = {
   loaders = {
-    {
-      module = "builtin",
-      options = {
-        path = vim.fn.getcwd() .. "/.vim/projector.json",
-        configs = nil,
-      },
-    },
-    {
-      module = "dap",
-      options = nil,
-    },
+    -- {
+    --   module = "builtin",
+    --   options = {
+    --     path = vim.fn.getcwd() .. "/.vim/projector.json",
+    --     configs = nil,
+    --   },
+    -- },
+    -- {
+    --   module = "dap",
+    --   options = nil,
+    -- },
   },
   outputs = {
     task = {
-      module = "builtin",
+      module = require("projector.loaders.builtin"),
       options = nil,
     },
-    debug = {
-      module = "dap",
-      options = nil,
-    },
-    database = {
-      module = "dadbod",
-      options = nil,
-    },
+    -- debug = {
+    --   module = "dap",
+    --   options = nil,
+    -- },
+    -- database = {
+    --   module = "dadbod",
+    --   options = nil,
+    -- },
   },
   display_format = function(loader, scope, group, modes, name)
     return loader .. "  " .. scope .. "  " .. group .. "  " .. modes .. "  " .. name
@@ -50,7 +50,7 @@ local config = {
     loaders = {},
     modes = {
       task = "",
-      debug = "",
+      debug = "󰃤",
       database = "",
     },
   },

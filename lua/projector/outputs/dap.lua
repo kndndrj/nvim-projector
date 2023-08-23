@@ -6,7 +6,7 @@ local has_dapui, dapui = pcall(require, "dapui")
 ---@type Output
 local DapOutput = Output:new()
 
----@param configuration Configuration
+---@param configuration task_configuration
 ---@diagnostic disable-next-line: unused-local
 function DapOutput:init(configuration)
   if has_dap then
@@ -53,7 +53,7 @@ function DapOutput:kill()
   self.status = "inactive"
 end
 
----@return Action[]|nil
+---@return task_action[]|nil
 function DapOutput:list_actions()
   if not has_dap then
     return
@@ -76,7 +76,7 @@ function DapOutput:list_actions()
     }
   end
 
-  ---@type Action[]
+  ---@type task_action[]
   local actions = {
     {
       label = "Terminate session",
@@ -110,7 +110,7 @@ function DapOutput:list_actions()
   end, session.threads)
 
   if next(stopped_threads) then
-    ---@type Action[]
+    ---@type task_action[]
     local stopped_thread_actions = {}
 
     for _, t in pairs(stopped_threads) do

@@ -16,19 +16,6 @@ end
 
 local M = {}
 
--- for legacy reasons
--- TODO: remove in the future
-M.configurations = {
-  global = {
-    debug = {},
-    tasks = {},
-  },
-  project = {
-    debug = {},
-    tasks = {},
-  },
-}
-
 ---@type config
 M.config = {}
 
@@ -66,21 +53,6 @@ function M.setup(config)
     if config.icons then
       M.config.icons = vim.tbl_deep_extend("force", M.config.icons, config.icons)
     end
-  end
-
-  -- TODO: remove
-  local opt_detected = false
-  for _, l in pairs(M.config.loaders) do
-    if l.opt then
-      opt_detected = true
-    end
-  end
-  if opt_detected then
-    utils.log(
-      "warn",
-      'Breaking changes detected:\nloaders.opt parameter was changed to loaders.options.\n\nSee "Loaders" section in README.md for more info on how to migrate the config!',
-      "setup()"
-    )
   end
 
   ---@type Handler
@@ -135,15 +107,6 @@ function M.kill()
     return
   end
   handler:kill_current_task { restart = false }
-end
-
----@deprecated
-function M.toggle_output()
-  if not check_handler(handler) then
-    return
-  end
-  handler:toggle_output()
-  utils.log("warn", "projector.toggle_output() is deprecated. Use projector.toggle() instead.")
 end
 
 ---@return string

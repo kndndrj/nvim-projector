@@ -4,7 +4,7 @@ local has_dadbod_ui = vim.fn.exists(":DBUI") == 2
 ---@type Output
 local DadbodOutput = Output:new()
 
----@param configuration Configuration
+---@param configuration task_configuration
 ---@diagnostic disable-next-line: unused-local
 function DadbodOutput:init(configuration)
   -- apply dadbod configuration variables
@@ -58,7 +58,7 @@ function DadbodOutput:kill()
   self:hide()
 end
 
----@return Action[]|nil
+---@return task_action[]|nil
 function DadbodOutput:list_actions() end
 
 return DadbodOutput

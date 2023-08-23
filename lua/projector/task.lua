@@ -1,15 +1,20 @@
 local utils = require("projector.utils")
 
+---@alias presentation "menuhidden"|""
+
+-- Id of the task
+---@alias task_id string
+
 -- Table of configuration parameters
----@class Configuration
+---@class task_configuration
 --- common:
 ---@field name string
 ---@field scope string
 ---@field group string
----@field presentation "menuhidden"[]
----@field dependencies string[]
----@field after string
----@field env { [string]: string }
+---@field presentation presentation|presentation[]
+---@field dependencies task_id[]
+---@field after task_id
+---@field env table<string, string>
 ---@field cwd string
 ---@field args string[]
 ---@field pattern string
@@ -26,49 +31,50 @@ local utils = require("projector.utils")
 ---@field queries { [string]: {[string]: string } }
 
 -- Table of actions
----@alias Action { label: string, action: fun(), override: boolean, nested: Action[] } table of actions
+---@alias task_action { label: string, action: fun( ), override: boolean, nested: task_action[] }
 
 -- What modes can the task run in
----@alias Mode "task"|"debug"|"database"
+---@alias task_mode string
+
+-- Metadata of a task
+---@alias task_meta { id: string, name: string, scope: string, group: string }
 
 ---@class Task
----@field meta { id: string, name: string, scope: string, group: string } id, name, scope (project or global), group (language group)
----@field presentation { menu: { show: boolean } }
----@field modes Mode[] What can the task do (debug, task)
----@field last_mode Mode Mode that was selected previously
----@field configuration Configuration Configuration of the task (command, args, env, cwd...)
----@field dependencies { task: Task, status: "done"|"error"|"" }[] List of dependent tasks
----@field after Task a task to run after this one is finished
----@field output Output Output that's configured per task's mode
----@filed _expand_config_variables fun(configuration: Configuration): Configuration Function that gets assigned to a task by a loader
+---@field private meta task_meta
+---@field private presentation { menu: { show: boolean } }
+---@field private configuration task_configuration Configuration of the task (command, args, env, cwd...)
+---@field private modes task_mode[] What can the task do (debug, task)
+---@field private last_mode task_mode Mode that was selected previously
+---@field private dependency_mode task_mode mode to run the dependencies in
+---@field private dependencies { task: Task, status: "done"|"error"|"" }[] List of dependent tasks
+---@field private after Task a task to run after this one is finished
+---@field private loader Loader which loader was used to load this task
+---@field private output_builders table<task_mode, OutputBuilder> task builders per mode
+---@field private output Output currently active output
+---@field private expand_config_variables fun(configuration: task_configuration):task_configuration Function that gets assigned to a task by a loader
 local Task = {}
 
----@param configuration Configuration
-function Task:new(configuration, opts)
+---@param configuration task_configuration
+---@param output_builders OutputBuilder[] map of available output builders
+---@param opts? { dependency_mode: task_mode, loader: Loader } mode to run the dependencies in
+---@return Task|nil
+function Task:new(configuration, output_builders, opts)
   if not configuration then
+    return
+  end
+  if not output_builders or #output_builders == 0 then
     return
   end
   opts = opts or {}
 
-  -- modes
+  -- check output capabilities
+  ---@type string[]
   local modes = {}
-  if utils.is_in_table(configuration, { "command" }) then
-    table.insert(modes, "task")
+  local builders = {}
+  for _, builder in ipairs(output_builders) do
+    table.insert(modes, builder:mode_name())
+    builders[builder:mode_name()] = builder
   end
-  if utils.is_in_table(configuration, { "type", "request" }) then
-    table.insert(modes, "debug")
-  end
-  if utils.is_in_table(configuration, { "databases" }) or utils.is_in_table(configuration, { "queries" }) then
-    table.insert(modes, "database")
-  end
-  if vim.tbl_isempty(modes) then
-    return
-  end
-
-  -- metadata
-  local name = configuration.name or "[empty name]"
-  local scope = opts.scope or "[empty scope]"
-  local group = opts.group or "[empty group]"
 
   -- presentation
   local presentation = {
@@ -79,12 +85,27 @@ function Task:new(configuration, opts)
   if configuration.presentation then
     local present = configuration.presentation
     if type(present) == "string" then
-      present = { configuration.presentation }
+      present = { present }
     end
     for _, p in ipairs(present) do
       if p == "menuhidden" then
         presentation.menu.show = false
       end
+    end
+  end
+
+  -- metadata
+  local name = configuration.name or "[empty name]"
+  local scope = configuration.scope or "[empty scope]"
+  local group = configuration.group or "[empty group]"
+
+  -- expand config function from loader
+  local expand_config = function(c)
+    return c
+  end
+  if opts.loader and type(opts.loader.expand_variables) == "function" then
+    expand_config = function(c)
+      return opts.loader:expand_variables(c)
     end
   end
 
@@ -95,49 +116,43 @@ function Task:new(configuration, opts)
       scope = scope,
       group = group,
     },
+    configuration = configuration,
     presentation = presentation,
     modes = modes,
     last_mode = nil,
-    configuration = configuration,
+    dependency_mode = opts.dependency_mode,
     dependencies = {},
     after = nil,
+    output_builders = builders,
+    loader = opts.loader,
     output = nil,
-    _expand_config_variables = function() end,
+    expand_config_variables = expand_config,
   }
   setmetatable(o, self)
   self.__index = self
   return o
 end
 
--- Set a function for expanding config variables
----@param func function(config: Configuration): Configuration
-function Task:set_expand_variables(func)
-  self._expand_config_variables = func
-end
-
 -- Run a task and hadle it's dependencies
----@param mode? Mode
----@param on_success? fun()
----@param on_problem? fun()
-function Task:run(mode, on_success, on_problem)
+---@param mode? task_mode
+---@param callback? fun(success: boolean)
+function Task:run(mode, callback)
   -- check parameters
-  if not on_success then
-    on_success = function() end
-  end
-  if not on_problem then
-    on_problem = function() end
-  end
-  if not mode and not self.last_mode then
-    on_problem()
-    return
-  end
-  mode = mode or self.last_mode
+  callback = callback or function(_) end
+  mode = mode or self.last_mode or self.modes[1]
   self.last_mode = mode
 
   -- If any output is already live, return
   if self:is_live() then
     utils.log("info", "Already live.", "Task " .. self.meta.name)
-    on_success()
+    self:show_output()
+    callback(true)
+    return
+  end
+
+  -- check if task has the capability to run the selected mode
+  if not utils.contains(self.modes, mode) then
+    callback(false)
     return
   end
 
@@ -148,77 +163,79 @@ function Task:run(mode, on_success, on_problem)
   end
 
   -- run the first not completed dependency
-  for _, dep in pairs(self.dependencies) do
+  for _, dep in ipairs(self.dependencies) do
     if dep.status ~= "done" and dep.status ~= "error" then
-      -- Set callbacks
-      local callback_success = function()
-        dep.status = "done"
-        dep.task:hide_output()
-        self:run(mode, on_success, on_problem)
-      end
-      local callback_problem = function()
+      local cb = function(ok)
+        if ok then
+          dep.status = "done"
+          dep.task:hide_output()
+          self:run(mode, callback)
+          return
+        end
+
         dep.status = "error"
-        utils.log("error", 'Problem with dependency: "' .. dep.task.meta.id .. '".', "Task " .. self.meta.name)
-        -- trigger on problem, stop further dependency execution and revert task's dependency statuses
-        on_problem()
+        utils.log("error", 'Problem with dependency: "' .. dep.task:metadata().id .. '".', "Task " .. self.meta.name)
+        -- trigger callback, stop further dependency execution and revert task's dependency statuses
+        callback(false)
         revert_dep_statuses()
       end
+
       -- Run the dependency in task mode (restart it if already running)
       dep.task:kill_output()
-      dep.task:run("task", callback_success, callback_problem)
+      dep.task:run(self.dependency_mode, cb)
       return
     end
   end
   -- revert dependency statuses if all dependencies are successfully finished
   revert_dep_statuses()
 
-  -- create a new output
-  local output_config = require("projector").config.outputs[mode]
-  ---@type boolean, Output
-  local ok, Output = pcall(require, "projector.outputs." .. output_config.module)
-  if not ok then
-    utils.log("error", 'Output for "' .. mode .. '" mode could not be created.', "Task " .. self.meta.name)
-    on_problem()
-    return
-  end
-
   -- handle post task with on_success output callback
-  local callback_success = on_success
-  if self.after then
-    callback_success = function()
-      self:hide_output()
-      self.after:run("task")
-      on_success()
+  local cb = function(ok)
+    if ok then
+      if self.after then
+        self:hide_output()
+        self.after:run(self.dependency_mode)
+      end
     end
+    callback(ok)
   end
 
-  ---@type Output
-  local output = Output:new {
-    name = self.meta.name,
-    user_opts = output_config.options,
-    on_success = callback_success,
-    on_problem = on_problem,
-  }
-
-  if not output then
-    on_problem()
-    return
-  end
-
-  self.output = output
-
-  -- run this task
-  self.output:init(self._expand_config_variables(self.configuration))
+  -- build the output and run the task
+  self.output = self.output_builders[mode]:build()
+  self.output:init(self.expand_config_variables(self.configuration), cb)
 end
 
----@return Mode[]
+---@return task_meta
+function Task:metadata()
+  return self.meta
+end
+
+---@return task_configuration
+function Task:config()
+  return self.configuration
+end
+
+---@param deps Task[]
+function Task:set_dependencies(deps)
+  self.dependencies = {}
+  for _, dep in ipairs(deps) do
+    table.insert(self.dependencies, { status = "", task = dep })
+  end
+end
+
+---@param task Task
+function Task:set_after(task)
+  self.after = task
+end
+
+---@return task_mode[]
 function Task:get_modes()
   return self.modes
 end
 
 function Task:is_live()
   local o = self.output
-  if o and o.status ~= "inactive" and o.status ~= "" then
+  if o and o:status() ~= "inactive" and o:status() ~= "" then
     return true
   end
   return false
@@ -226,15 +243,7 @@ end
 
 function Task:is_visible()
   local o = self.output
-  if o and o.status == "visible" then
-    return true
-  end
-  return false
-end
-
-function Task:is_hidden()
-  local o = self.output
-  if o and o.status == "hidden" then
+  if o and o:status() == "visible" then
     return true
   end
   return false
@@ -242,30 +251,30 @@ end
 
 function Task:show_output()
   local o = self.output
-  if o and o.status == "hidden" then
+  if o and o:status() == "hidden" then
     o:show()
   end
 end
 
 function Task:hide_output()
   local o = self.output
-  if o and o.status == "visible" then
+  if o and o:status() == "visible" then
     o:hide()
   end
 end
 
 function Task:kill_output()
   local o = self.output
-  if o then
+  if o and (o:status() == "visible" or o:status() == "hidden") then
     o:kill()
   end
 end
 
----@return Action[]|nil
-function Task:list_actions()
+---@return task_action[]|nil
+function Task:actions()
   local o = self.output
-  if o and o.status ~= "inactive" and o.status ~= "" then
-    return o:list_actions()
+  if o and type(o.actions) == "function" and o:status() ~= "inactive" and o:status() ~= "" then
+    return o:actions()
   end
 end
 

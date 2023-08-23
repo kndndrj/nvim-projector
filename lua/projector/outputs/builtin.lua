@@ -1,13 +1,27 @@
-local Output = require("projector.contract.output")
 local utils = require("projector.utils")
 
----@type Output
-local BuiltinOutput = Output:new()
+---@class BuiltinOutput: Output
+---@field private name string
+---@field private bufnr integer
+---@field private winid integer
+---@field private state output_status
+local BuiltinOutput = {}
 
----@param configuration Configuration
----@diagnostic disable-next-line: unused-local
-function BuiltinOutput:init(configuration)
-  local name = self.meta.name or "Builtin"
+function BuiltinOutput:new()
+  local o = {}
+  setmetatable(o, self)
+  self.__index = self
+  return o
+end
+
+function BuiltinOutput:status()
+  return self.state or "inactive"
+end
+
+---@param configuration task_configuration
+---@param callback fun(success: boolean)
+function BuiltinOutput:init(configuration, callback)
+  local name = configuration.name or "Builtin"
 
   local command = configuration.command
   if configuration.args then
@@ -19,11 +33,7 @@ function BuiltinOutput:init(configuration)
     env = configuration.env,
     cwd = configuration.cwd,
     on_exit = function(_, code)
-      local ok = true
-      if code ~= 0 then
-        ok = false
-      end
-      self:done(ok)
+      callback(code == 0)
     end,
   }
 
@@ -33,7 +43,7 @@ function BuiltinOutput:init(configuration)
     term_options.on_stdout = function(_, data, _)
       for _, line in ipairs(data) do
         if regex:match_str(line) then
-          self:done(true)
+          callback(true)
         end
       end
     end
@@ -44,11 +54,11 @@ function BuiltinOutput:init(configuration)
   vim.fn.termopen(command, term_options)
 
   local bufnr = vim.fn.bufnr()
-  self.meta.bufnr = bufnr
+  self.bufnr = bufnr
   local winid = vim.fn.win_getid()
-  self.meta.winid = winid
+  self.winid = winid
 
-  self.status = "visible"
+  self.state = "visible"
 
   -- Rename and hide the buffer
   vim.api.nvim_command("file " .. name .. " " .. bufnr)
@@ -59,70 +69,66 @@ function BuiltinOutput:init(configuration)
   vim.api.nvim_create_autocmd({ "BufDelete", "BufUnload" }, {
     buffer = bufnr,
     callback = function()
-      self.meta.bufnr = nil
-      self.status = "inactive"
+      self.bufnr = nil
+      self.state = "inactive"
     end,
   })
   -- If we close the window, the output is hidden
   vim.api.nvim_create_autocmd({ "WinClosed" }, {
     buffer = bufnr,
     callback = function()
-      self.meta.winid = nil
-      self.status = "hidden"
+      self.winid = nil
+      self.state = "hidden"
     end,
   })
 end
 
 function BuiltinOutput:show()
-  if self.status == "inactive" or self.status == "" then
-    utils.log("warn", "Not live!", "Builtin Output " .. self.meta.name)
+  if self.state == "inactive" or self.state == "" then
+    utils.log("warn", "Not live!", "Builtin Output " .. self.name)
     return
-  elseif self.status == "visible" then
-    utils.log("info", "Already visible.", "Builtin Output " .. self.meta.name)
+  elseif self.state == "visible" then
+    utils.log("info", "Already visible.", "Builtin Output " .. self.name)
     return
   end
 
   -- Open a new window and open the buffer in it
   vim.api.nvim_command("15split")
-  self.meta.winid = vim.fn.win_getid()
-  vim.api.nvim_command("b " .. self.meta.bufnr)
+  self.winid = vim.fn.win_getid()
+  vim.api.nvim_command("b " .. self.bufnr)
 
-  self.status = "visible"
+  self.state = "visible"
 end
 
 function BuiltinOutput:hide()
-  if self.status == "inactive" or self.status == "" then
-    utils.log("warn", "Not live!", "Builtin Output " .. self.meta.name)
+  if self.state == "inactive" or self.state == "" then
+    utils.log("warn", "Not live!", "Builtin Output " .. self.name)
     return
-  elseif self.status == "hidden" then
-    utils.log("info", "Already hidden.", "Builtin Output " .. self.meta.name)
+  elseif self.state == "hidden" then
+    utils.log("info", "Already hidden.", "Builtin Output " .. self.name)
     return
   end
 
-  vim.api.nvim_win_close(self.meta.winid, true)
-  self.meta.winid = nil
+  vim.api.nvim_win_close(self.winid, true)
+  self.winid = nil
 
-  self.status = "hidden"
+  self.state = "hidden"
 end
 
 function BuiltinOutput:kill()
-  if self.status == "inactive" or self.status == "" then
-    utils.log("warn", "Not live!", "Builtin Output " .. self.meta.name)
+  if self.state == "inactive" or self.state == "" then
     return
   end
 
-  if self.meta.winid ~= nil then
-    vim.api.nvim_win_close(self.meta.winid, true)
+  if self.winid then
+    vim.api.nvim_win_close(self.winid, true)
   end
 
-  if self.meta.bufnr ~= nil then
-    vim.api.nvim_buf_delete(self.meta.bufnr, { force = true })
+  if self.bufnr then
+    vim.api.nvim_buf_delete(self.bufnr, { force = true })
   end
 
-  self.status = "inactive"
+  self.state = "inactive"
 end
-
----@return Action[]|nil
-function BuiltinOutput:list_actions() end
 
 return BuiltinOutput

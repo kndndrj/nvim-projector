@@ -18,8 +18,8 @@ function Loader:load()
   error("not_implemented")
 end
 
----@param configuration Configuration
----@return Configuration
+---@param configuration task_configuration
+---@return task_configuration
 ---@diagnostic disable-next-line: unused-local
 function Loader:expand_variables(configuration)
   error("not_implemented")

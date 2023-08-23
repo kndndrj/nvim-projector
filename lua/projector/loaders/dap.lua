@@ -30,8 +30,8 @@ end
 
 -- just to avoid "not_implemented" error
 -- dap handles variables itself
----@param configuration Configuration
----@return Configuration
+---@param configuration task_configuration
+---@return task_configuration
 function DapLoader:expand_variables(configuration)
   return configuration
 end

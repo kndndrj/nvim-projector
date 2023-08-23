@@ -12,15 +12,26 @@ function M.alphanumsort(array)
   return array
 end
 
----@param obj table targeted table
----@param fields { exact?: string[], prefixes?: string[] } exact field names or prefixes
-function M.is_in_table(obj, fields)
+---@param obj table map like table
+---@param fields string[] names of fields
+function M.has_fields(obj, fields)
   for _, f in pairs(fields) do
     if obj[f] == nil then
       return false
     end
   end
   return true
+end
+
+---@param list any[] list like table
+---@param val any value in the table
+function M.contains(list, val)
+  for _, f in ipairs(list) do
+    if f == val then
+      return true
+    end
+  end
+  return false
 end
 
 ---@param obj table
@@ -36,8 +47,8 @@ function M.longest(obj, selector)
   return len
 end
 
----@param display Display
----@return Display
+---@param display display
+---@return display
 function M.map_icons(display)
   ---@type config
   local config = require("projector").config
