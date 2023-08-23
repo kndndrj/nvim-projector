@@ -1,13 +1,15 @@
 local Handler = require("projector.handler")
+local Dashboard = require("projector.dashboard")
 local utils = require("projector.utils")
 
 ---@type Handler
 local handler = nil
+---@type Dashboard
+local dashboard = nil
 
 -- Function for checking if handler has been initialized
----@param hnd Handler
-local function check_handler(hnd)
-  if not hnd then
+local function check_setup()
+  if not handler or not dashboard then
     utils.log("warn", '"projector.setup()" has not been called yet!')
     return false
   end
@@ -58,67 +60,69 @@ function M.setup(config)
   ---@type Handler
   handler = Handler:new()
   handler:load_sources()
+
+  dashboard = Dashboard:new(handler)
 end
 
 function M.reload()
-  if not check_handler(handler) then
+  if not check_setup() then
     return
   end
   handler:load_sources()
 end
 
 function M.continue()
-  if not check_handler(handler) then
+  if not check_setup() then
     return
   end
-  handler:continue()
+  dashboard:open()
 end
 
 function M.next()
-  if not check_handler(handler) then
+  if not check_setup() then
     return
   end
   handler:next_task()
 end
 
 function M.previous()
-  if not check_handler(handler) then
+  if not check_setup() then
     return
   end
   handler:previous_task()
 end
 
 function M.toggle()
-  if not check_handler(handler) then
+  if not check_setup() then
     return
   end
   handler:toggle_output()
 end
 
 function M.restart()
-  if not check_handler(handler) then
+  if not check_setup() then
     return
   end
-  handler:kill_current_task { restart = true }
+  handler:kill_task { restart = true }
 end
 
 function M.kill()
-  if not check_handler(handler) then
+  if not check_setup() then
     return
   end
-  handler:kill_current_task { restart = false }
+  handler:kill_task { restart = false }
 end
 
 ---@return string
 function M.status()
-  if not check_handler(handler) then
+  if not check_setup() then
     return ""
   end
   return table.concat(handler:dashboard(), " ")
 end
 
 function M.handler()
-  if not check_handler(handler) then
+  if not check_setup() then
     return
   end
   return handler

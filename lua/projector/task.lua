@@ -31,7 +31,7 @@ local utils = require("projector.utils")
 ---@field queries { [string]: {[string]: string } }
 
 -- Table of actions
----@alias task_action { label: string, action: fun( ), override: boolean, nested: task_action[] }
+---@alias task_action { label: string, action: fun( ), override?: boolean, nested?: task_action[] }
 
 -- What modes can the task run in
 ---@alias task_mode string
@@ -48,7 +48,6 @@ local utils = require("projector.utils")
 ---@field private dependency_mode task_mode mode to run the dependencies in
 ---@field private dependencies { task: Task, status: "done"|"error"|"" }[] List of dependent tasks
 ---@field private after Task a task to run after this one is finished
----@field private loader Loader which loader was used to load this task
 ---@field private output_builders table<task_mode, OutputBuilder> task builders per mode
 ---@field private output Output currently active output
 ---@field private expand_config_variables fun(configuration: task_configuration):task_configuration Function that gets assigned to a task by a loader
@@ -56,7 +55,7 @@ local Task = {}
 
 ---@param configuration task_configuration
 ---@param output_builders OutputBuilder[] map of available output builders
----@param opts? { dependency_mode: task_mode, loader: Loader } mode to run the dependencies in
+---@param opts? { dependency_mode: task_mode, expand_config: fun(config: task_configuration):task_configuration }
 ---@return Task|nil
 function Task:new(configuration, output_builders, opts)
   if not configuration then
@@ -99,16 +98,6 @@ function Task:new(configuration, output_builders, opts)
   local scope = configuration.scope or "[empty scope]"
   local group = configuration.group or "[empty group]"
 
-  -- expand config function from loader
-  local expand_config = function(c)
-    return c
-  end
-  if opts.loader and type(opts.loader.expand_variables) == "function" then
-    expand_config = function(c)
-      return opts.loader:expand_variables(c)
-    end
-  end
-
   local o = {
     meta = {
       id = scope .. "." .. group .. "." .. name,
@@ -124,9 +113,10 @@ function Task:new(configuration, output_builders, opts)
     dependencies = {},
     after = nil,
     output_builders = builders,
-    loader = opts.loader,
     output = nil,
-    expand_config_variables = expand_config,
+    expand_config_variables = opts.expand_config or function(c)
+      return c
+    end,
   }
   setmetatable(o, self)
   self.__index = self
@@ -270,12 +260,13 @@ function Task:kill_output()
   end
 end
 
----@return task_action[]|nil
+---@return task_action[]
 function Task:actions()
   local o = self.output
   if o and type(o.actions) == "function" and o:status() ~= "inactive" and o:status() ~= "" then
-    return o:actions()
+    return o:actions() or {}
   end
+  return {}
 end
 
 return Task

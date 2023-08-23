@@ -34,6 +34,20 @@ function M.contains(list, val)
   return false
 end
 
+-- merges multiple list like tables
+---@param ... any[] list like tables
+---@return any[] # merged list
+function M.merge_lists(...)
+  local args = { ... }
+  local ret = {}
+
+  for _, v in ipairs(args) do
+    vim.list_extend(ret, v)
+  end
+
+  return ret
+end
+
 ---@param obj table
 ---@param selector string
 function M.longest(obj, selector)

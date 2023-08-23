@@ -6,6 +6,7 @@ local Lookup = require("projector.handler.lookup")
 
 ---@class Handler
 ---@field private lookup Lookup task lookup
+---@field private loaders Loader[]
 ---@field private output_builders OutputBuilder[] provided output builders
 local Handler = {}
 
@@ -14,6 +15,7 @@ function Handler:new()
     tasks = {},
     lookup = Lookup:new(),
     output_builders = { require("projector.outputs").BuiltinOutputBuilder },
+    loaders = {},
   }
   setmetatable(o, self)
   self.__index = self
@@ -74,11 +76,14 @@ function Handler:load_sources()
     if ok then
       ---@type Loader
       local loader = l:new { user_opts = loader_config.options }
+
       local configs = loader:load()
       if configs then
         for _, cfg in ipairs(configs) do
           records[math.random()] = { config = cfg, loader = loader }
         end
+
+        table.insert(self.loaders, loader)
       end
     end
   end
@@ -90,11 +95,16 @@ function Handler:load_sources()
   ---@type Task[]
   local tasks = {}
   for _, rec in pairs(records) do
-    local task = Task:new(
-      rec.config,
-      rec.output_builders,
-      { dependency_mode = "task", loader = rec.loader } --[[TODO: get "task" from config]]
-    )
+    local task = Task:new(rec.config, rec.output_builders, {
+      dependency_mode = "task",
+      expand_config = function(c)
+        if rec.loader and type(rec.loader.expand_variables) == "function" then
+          return rec.loader:expand_variables(c)
+        else
+          return c
+        end
+      end,
+    } --[[TODO: get "task" from config]])
     if task then
       table.insert(tasks, task)
     end
@@ -157,6 +167,50 @@ function Handler:select_and_run(override_hidden)
       end
     end
   )
+end
+
+---@param filter? { live: boolean, visible: boolean }
+---@return Task[] tasks
+function Handler:get_tasks(filter)
+  return self.lookup:get_all(filter)
+end
+
+---@return Task tasks
+function Handler:selected_task()
+  return self.lookup:get_selected()
+end
+
+---@return Loader[] loaders
+function Handler:get_loaders()
+  return self.loaders
+end
+
+---@return boolean triggered was any action triggered
+function Handler:evaluate_live_task_action_overrides()
+  ---@type task_action[]
+  local actions = {}
+
+  -- get actions from all live tasks
+  for _, task in pairs(self.lookup:get_all { live = true }) do
+    vim.list_extend(actions, task:actions())
+  end
+
+  -- run all overrides
+  local overrides_detected = false
+  for _, action in pairs(actions) do
+    if action.override then
+      if type(action.action) == "function" then
+        action.action()
+      end
+      overrides_detected = true
+    end
+  end
+
+  if overrides_detected then
+    return true
+  end
+
+  return false
 end
 
 -- Start new tasks, interact with live ones.
@@ -259,6 +313,25 @@ function Handler:previous_task()
   task:show_output()
 end
 
+-- shows the task's output on screen and closes other ones
+---@param id? task_id
+function Handler:show_task(id)
+  id = id or ""
+  local task = self.lookup:get(id) or self.lookup:get_selected()
+
+  if not task or not task:is_live() then
+    return
+  end
+
+  -- hide all visible tasks
+  for _, t in pairs(self.lookup:get_all { live = true, visible = true }) do
+    t:hide_output()
+  end
+
+  -- and show only this one
+  task:show_output()
+end
+
 -- Toggle the current output or jump to next one if this one died
 function Handler:toggle_output()
   local task = self.lookup:get_selected(true)
@@ -270,12 +343,21 @@ function Handler:toggle_output()
   end
 end
 
--- Kill or restart the currently selected task
----@param opts? { restart: boolean }
-function Handler:kill_current_task(opts)
+-- Kill or restart the task with id or selected one
+---@param opts? { id: task_id, restart: boolean  }
+function Handler:kill_task(opts)
   opts = opts or {}
 
-  local task = self.lookup:get_selected()
+  local task
+  if opts.id then
+    task = self.lookup:get(opts.id)
+  else
+    task = self.lookup:get_selected()
+  end
+
+  if not task then
+    return
+  end
 
   -- kill
   task:kill_output()
