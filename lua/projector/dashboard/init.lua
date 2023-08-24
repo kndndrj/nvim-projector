@@ -21,7 +21,6 @@ local NuiLine = require("nui.line")
 ---@field action_3? fun()
 
 ---@class Dashboard
----@field private handler Handler
 ---@field private left_tree table NuiTree
 ---@field private right_tree table NuiTree
 ---@field private popup Popup
@@ -29,13 +28,9 @@ local NuiLine = require("nui.line")
 ---@field private candies table<string, Candy>
 local Dashboard = {}
 
----@param handler Handler
 ---@param opts? dashboard_config
 ---@return Dashboard
-function Dashboard:new(handler, opts)
-  if not handler then
-    error("no Handler passed to Dashboard")
-  end
+function Dashboard:new(opts)
   opts = opts or {}
 
   local candies = {}
@@ -44,7 +39,6 @@ function Dashboard:new(handler, opts)
   end
 
   local o = {
-    handler = handler,
     popup = Popup:new(),
     mappings = opts.mappings or {},
     candies = candies,
@@ -106,8 +100,9 @@ end
 
 -- retrieve nodes from active tasks (hidden and visible)
 ---@private
+---@param tasks Task[] list of all tasks
 ---@return Node[]
-function Dashboard:get_active_task_nodes()
+function Dashboard:get_active_task_nodes(tasks)
   local visible_nodes = {}
   local hidden_nodes = {}
 
@@ -139,38 +134,43 @@ function Dashboard:get_active_task_nodes()
     return action_nodes
   end
 
-  for _, task in ipairs(self.handler:get_tasks { live = true }) do
-    local is_visible = task:is_visible()
-    local type = "task_hidden"
-    local meta = task:metadata()
-    local action_1
-    if is_visible then
-      type = "task_visible"
-    end
-    action_1 = function()
-      self.handler:show_task(meta.id)
-    end
+  for _, task in ipairs(tasks) do
+    if task:is_live() then
+      local is_visible = task:is_visible()
+      local type = "task_hidden"
+      local meta = task:metadata()
+      if is_visible then
+        type = "task_visible"
+      end
+      local _, current_mode = task:get_modes()
 
-    local node = NuiTree.Node({
-      id = meta.id,
-      name = meta.name,
-      type = type,
-      action_1 = action_1,
-      action_2 = function()
-        self.handler:kill_task { id = task:metadata().id, restart = true }
-      end,
-      action_3 = function()
-        self.handler:kill_task { id = task:metadata().id, restart = false }
-      end,
-    }, parse_actions(task:actions(), meta.id))
+      local node = NuiTree.Node({
+        id = meta.id,
+        name = meta.name,
+        type = type,
+        comment = current_mode,
+        -- show
+        action_1 = function()
+          task:show()
+        end,
+        -- restart
+        action_2 = function()
+          task:run { restart = true }
+        end,
+        -- kill
+        action_3 = function()
+          task:kill()
+        end,
+      }, parse_actions(task:actions(), meta.id))
 
-    -- expand by default (show actions)
-    node:expand()
+      -- expand by default (show actions)
+      node:expand()
 
-    if is_visible then
-      table.insert(visible_nodes, node)
-    else
-      table.insert(hidden_nodes, node)
+      if is_visible then
+        table.insert(visible_nodes, node)
+      else
+        table.insert(hidden_nodes, node)
+      end
     end
   end
 
@@ -182,54 +182,56 @@ end
 
 -- retrieve nodes from inactive tasks
 ---@private
+---@param tasks Task[] list of all tasks
 ---@return Node[]
-function Dashboard:get_inactive_task_nodes()
+function Dashboard:get_inactive_task_nodes(tasks)
   local normal_nodes = {}
 
   -- nodes that are hidden in the menu (because of presentation options)
   local menuhidden_nodes = {}
 
-  local inactive_tasks = self.handler:get_tasks { live = false }
-  for _, task in ipairs(inactive_tasks) do
-    -- handle modes
-    local comment
-    local modes = task:get_modes()
-    local action
-    local children = {}
-    if #modes == 1 then
-      action = function()
-        task:run(modes[1])
+  for _, task in ipairs(tasks) do
+    if not task:is_live() then
+      -- handle modes
+      local comment
+      local modes, _ = task:get_modes()
+      local action
+      local children = {}
+      if #modes == 1 then
+        action = function()
+          task:run { mode = modes[1] }
+        end
+        comment = modes[1]
+      elseif #modes > 1 then
+        for _, mode in ipairs(modes) do
+          table.insert(
+            children,
+            NuiTree.Node {
+              id = task:metadata().id .. mode,
+              name = mode,
+              type = "mode",
+              action_1 = function()
+                task:run { mode = mode }
+              end,
+            }
+          )
+        end
       end
-      comment = modes[1]
-    elseif #modes > 1 then
-      for _, mode in ipairs(modes) do
-        table.insert(
-          children,
-          NuiTree.Node {
-            id = task:metadata().id .. mode,
-            name = mode,
-            type = "mode",
-            action_1 = function()
-              task:run(mode)
-            end,
-          }
-        )
+
+      local node = NuiTree.Node({
+        id = task:metadata().id,
+        name = task:metadata().name,
+        comment = comment,
+        type = "task_inactive",
+        action_1 = action,
+      }, children)
+
+      -- put in appropriate list based on presentation
+      if task:presentation().menu.show then
+        table.insert(normal_nodes, node)
+      else
+        table.insert(menuhidden_nodes, node)
       end
-    end
-
-    local node = NuiTree.Node({
-      id = task:metadata().id,
-      name = task:metadata().name,
-      comment = comment,
-      type = "task_inactive",
-      action_1 = action,
-    }, children)
-
-    -- put in appropriate list based on presentation
-    if task:presentation().menu.show then
-      table.insert(normal_nodes, node)
-    else
-      table.insert(menuhidden_nodes, node)
     end
   end
 
@@ -277,11 +279,11 @@ end
 
 -- retrieve loader nodes
 ---@private
+---@param loaders Loader[] list of loaders
 ---@return Node[]
-function Dashboard:get_loader_nodes()
+function Dashboard:get_loader_nodes(loaders)
   local nodes = {}
 
-  local loaders = self.handler:get_loaders()
   for _, loader in ipairs(loaders) do
     table.insert(
       nodes,
@@ -368,31 +370,31 @@ function Dashboard:map_keys(tree, bufnr)
 end
 
 -- Show dashboard on screen
-function Dashboard:open()
-  -- evaluate any task overrides
-  if self.handler:evaluate_live_task_action_overrides() then
-    return
-  end
-
+---@param tasks Task[] list of tasks to display
+---@param loaders Loader[] list of loaders to display
+function Dashboard:open(tasks, loaders)
   local left_bufnr, right_bufnr = self.popup:open()
 
+  -- left panel
   self.left_tree = self:create_tree(
     left_bufnr,
-    utils.merge_lists(self:get_inactive_task_nodes(), self:get_separator_nodes(3), self:get_loader_nodes())
+    utils.merge_lists(self:get_inactive_task_nodes(tasks), self:get_separator_nodes(3), self:get_loader_nodes(loaders))
   )
+  self:map_keys(self.left_tree, left_bufnr)
 
-  local active_nodes = self:get_active_task_nodes()
+  -- right panel
+  local active_nodes = self:get_active_task_nodes(tasks)
   self.right_tree = self:create_tree(right_bufnr, active_nodes)
+  self:map_keys(self.right_tree, right_bufnr)
 
+  -- set focus depending on the task state
   if #active_nodes > 0 then
     self.popup:set_focus("right")
   else
     self.popup:set_focus("left")
   end
 
-  self:map_keys(self.left_tree, left_bufnr)
-  self:map_keys(self.right_tree, right_bufnr)
-
+  -- render trees
   self.left_tree:render()
   self.right_tree:render()
 end

@@ -50,17 +50,17 @@ local utils = require("projector.utils")
 ---@field private last_mode task_mode Mode that was selected previously
 ---@field private dependency_mode task_mode mode to run the dependencies in
 ---@field private dependencies { task: Task, status: "done"|"error"|"" }[] List of dependent tasks
----@field private after Task a task to run after this one is finished
+---@field private after? Task a task to run after this one is finished
 ---@field private output_builders table<task_mode, OutputBuilder> task builders per mode
 ---@field private output Output currently active output
 ---@field private expand_config_variables fun(configuration: task_configuration):task_configuration Function that gets assigned to a task by a loader
----@field private on_exec fun() function to run before executing the task
+---@field private activator fun() callback function that sets this task as the active one
 local Task = {}
 
 ---@param configuration task_configuration
 ---@param output_builders OutputBuilder[] map of available output builders
----@param opts? { dependency_mode: task_mode, on_exec: fun(), expand_config: fun(config: task_configuration):task_configuration }
----@return Task|nil
+---@param opts? { dependency_mode: task_mode, activator: fun(), expand_config: fun(config: task_configuration):task_configuration }
+---@return Task?
 function Task:new(configuration, output_builders, opts)
   if not configuration then
     return
@@ -79,8 +79,36 @@ function Task:new(configuration, output_builders, opts)
     builders[builder:mode_name()] = builder
   end
 
+  local o = {
+    meta = {},
+    configuration = configuration,
+    present = {},
+    modes = modes,
+    last_mode = nil,
+    dependency_mode = opts.dependency_mode,
+    dependencies = {},
+    after = nil,
+    output_builders = builders,
+    output = nil,
+    expand_config_variables = opts.expand_config or function(c)
+      return c
+    end,
+    activator = opts.activator or function() end,
+  }
+  setmetatable(o, self)
+  self.__index = self
+
+  -- configure metadata and other config related stuff
+  o:update_config(configuration)
+
+  return o
+end
+
+-- updates task's config
+---@param configuration task_configuration
+function Task:update_config(configuration)
   -- presentation
-  local presentation = {
+  self.present = {
     menu = {
       show = true,
     },
@@ -92,7 +120,7 @@ function Task:new(configuration, output_builders, opts)
     end
     for _, p in ipairs(present) do
       if p == "menuhidden" then
-        presentation.menu.show = false
+        self.present.menu.show = false
       end
     end
   end
@@ -101,49 +129,30 @@ function Task:new(configuration, output_builders, opts)
   local name = configuration.name or "[empty name]"
   local scope = configuration.scope or "[empty scope]"
   local group = configuration.group or "[empty group]"
-
-  local o = {
-    meta = {
-      id = scope .. "." .. group .. "." .. name,
-      name = name,
-      scope = scope,
-      group = group,
-    },
-    configuration = configuration,
-    present = presentation,
-    modes = modes,
-    last_mode = nil,
-    dependency_mode = opts.dependency_mode,
-    dependencies = {},
-    after = nil,
-    output_builders = builders,
-    output = nil,
-    expand_config_variables = opts.expand_config or function(c)
-      return c
-    end,
-    on_exec = opts.on_exec or function() end,
+  self.meta = {
+    id = scope .. "." .. group .. "." .. name,
+    name = name,
+    scope = scope,
+    group = group,
   }
-  setmetatable(o, self)
-  self.__index = self
-  return o
 end
 
 -- Run a task and hadle it's dependencies
----@param mode? task_mode
----@param callback? fun(success: boolean)
-function Task:run(mode, callback)
-  -- run on_exec hook
-  self.on_exec()
+---@param opts? { mode: task_mode, callback: fun(success: boolean), restart: boolean }
+function Task:run(opts)
+  -- set task as active
+  self.activator()
 
-  -- check parameters
-  callback = callback or function(_) end
-  mode = mode or self.last_mode or self.modes[1]
+  -- setup options
+  opts = opts or {}
+  local mode = opts.mode or self.last_mode or self.modes[1]
   self.last_mode = mode
+  local callback = opts.callback or function(_) end
+  local restart = opts.restart or false
 
   -- If any output is already live, return
-  if self:is_live() then
-    utils.log("info", "Already live.", "Task " .. self.meta.name)
-    self:show_output()
+  if self:is_live() and not restart then
+    self:show()
     callback(true)
     return
   end
@@ -166,8 +175,7 @@ function Task:run(mode, callback)
       local cb = function(ok)
         if ok then
           dep.status = "done"
-          dep.task:hide_output()
-          self:run(mode, callback)
+          self:run(opts)
           return
         end
 
@@ -178,9 +186,8 @@ function Task:run(mode, callback)
         revert_dep_statuses()
       end
 
-      -- Run the dependency in task mode (restart it if already running)
-      dep.task:kill_output()
-      dep.task:run(self.dependency_mode, cb)
+      -- Run the dependency (restart it if already running)
+      dep.task:run { mode = self.dependency_mode, callback = cb, restart = true }
       return
     end
   end
@@ -191,8 +198,7 @@ function Task:run(mode, callback)
   local cb = function(ok)
     if ok then
       if self.after then
-        self:hide_output()
-        self.after:run(self.dependency_mode)
+        self.after:run { mode = self.dependency_mode }
       end
     end
     callback(ok)
@@ -213,22 +219,22 @@ function Task:config()
   return self.configuration
 end
 
+-- sets dependencies and after tasks
 ---@param deps Task[]
-function Task:set_dependencies(deps)
+---@param after? Task
+function Task:set_accompanying_tasks(deps, after)
   self.dependencies = {}
   for _, dep in ipairs(deps) do
     table.insert(self.dependencies, { status = "", task = dep })
   end
+
+  self.after = after
 end
 
----@param task Task
-function Task:set_after(task)
-  self.after = task
-end
-
----@return task_mode[]
+---@return task_mode[] all # all modes
+---@return task_mode? latest # last mode that this task was ran in
 function Task:get_modes()
-  return self.modes
+  return self.modes, self.last_mode
 end
 
 function Task:is_live()
@@ -247,21 +253,24 @@ function Task:is_visible()
   return false
 end
 
-function Task:show_output()
+function Task:show()
+  -- set task as active
+  self.activator()
+
   local o = self.output
   if o and o:status() == "hidden" then
     o:show()
   end
 end
 
-function Task:hide_output()
+function Task:hide()
   local o = self.output
   if o and o:status() == "visible" then
     o:hide()
   end
 end
 
-function Task:kill_output()
+function Task:kill()
   local o = self.output
   if o and (o:status() == "visible" or o:status() == "hidden") then
     o:kill()

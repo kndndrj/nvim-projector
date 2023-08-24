@@ -42,11 +42,9 @@ function M.setup(config)
   -- TODO: remove
   M.config = opts
 
-  ---@type Handler
-  handler = Handler:new()
+  dashboard = Dashboard:new(opts.dashboard)
+  handler = Handler:new(dashboard)
   handler:load_sources()
-
-  dashboard = Dashboard:new(handler, opts.dashboard)
 end
 
 function M.reload()
@@ -60,7 +58,7 @@ function M.continue()
   if not check_setup() then
     return
   end
-  dashboard:open()
+  handler:continue()
 end
 
 function M.next()

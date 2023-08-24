@@ -79,23 +79,22 @@ end
 ---@private
 function Lookup:configure_dependencies()
   for _, task in pairs(self.tasks) do
+    local deps = {}
     if task:config().dependencies then
-      local deps = {}
       for _, id in ipairs(task:config().dependencies) do
         local dep = self.tasks[id]
         if dep then
           table.insert(deps, dep)
         end
       end
-      task:set_dependencies(deps)
     end
 
+    local after
     if task:config().after then
-      local after = self.tasks[task:config().after]
-      if after then
-        task:set_after(after)
-      end
+      after = self.tasks[task:config().after]
     end
+
+    task:set_accompanying_tasks(deps, after)
   end
 end
 
@@ -127,7 +126,7 @@ function Lookup:get_all(filter)
 end
 
 ---@param id task_id
----@return Task|nil task
+---@return Task? task
 function Lookup:get(id)
   return self.tasks[id]
 end
