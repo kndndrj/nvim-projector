@@ -36,16 +36,16 @@ local function to_picks(records)
 end
 
 -- get preprocessed records from output builders
----@param builders OutputBuilder[]
+---@private
 ---@param records _records
 ---@return _records
-local function preprocess(builders, records)
+function Handler:preprocess(records)
   local selection = to_picks(records)
 
   ---@type _records
   local selected = {}
 
-  for _, builder in ipairs(builders) do
+  for _, builder in ipairs(self.output_builders) do
     local picked = builder:preprocess(selection)
 
     for id, cfg in pairs(picked) do
@@ -62,7 +62,7 @@ end
 
 -- Load tasks from all loaders
 function Handler:load_sources()
-  ---@type config
+  ---@type Config
   local config = require("projector").config
 
   ---@alias _records table<string, { config: task_configuration, loader: Loader, output_builders: OutputBuilder[] }>
@@ -89,13 +89,14 @@ function Handler:load_sources()
   end
 
   -- filter records using outputs
-  records = preprocess(self.output_builders, records)
+  records = self:preprocess(records)
 
   -- create tasks from records
   ---@type Task[]
   local tasks = {}
   for _, rec in pairs(records) do
-    local task = Task:new(rec.config, rec.output_builders, {
+    local task
+    task = Task:new(rec.config, rec.output_builders, {
       dependency_mode = "task",
       expand_config = function(c)
         if rec.loader and type(rec.loader.expand_variables) == "function" then
@@ -103,6 +104,9 @@ function Handler:load_sources()
         else
           return c
         end
+      end,
+      on_exec = function()
+        self.lookup:set_selected(task:metadata().id)
       end,
     } --[[TODO: get "task" from config]])
     if task then
@@ -112,61 +116,6 @@ function Handler:load_sources()
 
   -- add tasks to lookup
   self.lookup:replace_tasks(tasks)
-end
-
--- Select a task and it's mode and run it
----@param override_hidden? boolean
-function Handler:select_and_run(override_hidden)
-  ---@type config
-  local config = require("projector").config
-
-  -- reload configs if configured
-  if config.automatic_reload then
-    self:load_sources()
-  end
-
-  vim.ui.select(
-    self.lookup:get_all(),
-    {
-      prompt = "select a task:",
-      ---@param item Task
-      format_item = function(item)
-        return item:metadata().name
-      end,
-    },
-    ---@param choice Task
-    function(choice)
-      if choice then
-        local modes = choice:get_modes()
-        if #modes == 1 then
-          -- hide all other visible tasks and show this one
-          for _, t in pairs(self.lookup:get_all { live = true, visible = true }) do
-            t:hide_output()
-          end
-          self.lookup:set_selected(choice:metadata().id)
-          choice:run(modes[1])
-        elseif #modes > 1 then
-          vim.ui.select(
-            modes,
-            {
-              prompt = "select mode:",
-            },
-            ---@param m task_mode
-            function(m)
-              if m then
-                -- hide all other visible tasks and show this one
-                for _, t in pairs(self.lookup:get_all { live = true, visible = true }) do
-                  t:hide_output()
-                end
-                self.lookup:set_selected(choice:metadata().id)
-                choice:run(m)
-              end
-            end
-          )
-        end
-      end
-    end
-  )
 end
 
 ---@param filter? { live: boolean, visible: boolean }
@@ -213,80 +162,6 @@ function Handler:evaluate_live_task_action_overrides()
   return false
 end
 
--- Start new tasks, interact with live ones.
--- Acts as an entrypoint to the program
-function Handler:continue()
-  local live_tasks = self.lookup:get_all { live = true }
-
-  if vim.tbl_isempty(live_tasks) then
-    self:select_and_run()
-    return
-  end
-
-  -- get actions from all live tasks
-  local actions = {}
-  for _, t in pairs(live_tasks) do
-    local t_actions = t:actions()
-    if t_actions then
-      actions = vim.tbl_extend("keep", actions, t_actions)
-    end
-  end
-
-  if vim.tbl_isempty(actions) then
-    self:select_and_run()
-    return
-  end
-
-  -- if any overrides specified, run them and return
-  local has_overrides = false
-  for _, a in pairs(actions) do
-    if a.override then
-      if a.action then
-        a.action()
-      end
-      has_overrides = true
-    end
-  end
-  if has_overrides then
-    return
-  end
-
-  -- add a task selector action
-  table.insert(actions, 1, {
-    label = "Run a task",
-    action = function()
-      self:select_and_run()
-    end,
-  })
-
-  ---@param list task_action[]
-  local function select_action(list)
-    vim.ui.select(
-      list,
-      {
-        prompt = "select an action:",
-        format_item = function(item)
-          return item.label
-        end,
-      },
-      ---@param choice task_action
-      function(choice)
-        if choice then
-          if choice.action then
-            choice.action()
-          elseif choice.nested then
-            -- Handle nested actions recursively
-            select_action(choice.nested)
-          end
-        end
-      end
-    )
-  end
-
-  -- Open action selector
-  select_action(actions)
-end
-
 -- Jump to next task's output
 function Handler:next_task()
   local task = self.lookup:select_next(true)
@@ -322,6 +197,9 @@ function Handler:show_task(id)
   if not task or not task:is_live() then
     return
   end
+
+  -- set task as active one
+  self.lookup:set_selected(id)
 
   -- hide all visible tasks
   for _, t in pairs(self.lookup:get_all { live = true, visible = true }) do
@@ -369,10 +247,10 @@ function Handler:kill_task(opts)
 end
 
 ---@return string[]
-function Handler:dashboard()
+function Handler:status()
   local ret = {}
 
-  local current = self.lookup:get_selected()
+  local current = self.lookup:get_selected(true)
 
   for _, task in ipairs(self.lookup:get_all { live = true }) do
     if task:metadata().id == current:metadata().id then

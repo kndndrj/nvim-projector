@@ -1,161 +1,57 @@
 local utils = require("projector.utils")
+local Popup = require("projector.dashboard.popup")
 local NuiTree = require("nui.tree")
 local NuiLine = require("nui.line")
+
+---@class Candy
+---@field icon string
+---@field icon_highlight string
+---@field text_highlight string
+
+---@alias dashboard_config { mappings: table<string, mapping>, disable_candies: boolean, candies: table<string, Candy> }
 
 ---@class Node
 ---@field id string
 ---@field name string
----@field type "task"|"loader"|"mode"
----@field state "special"|"active"|"normal"|"inactive"
+---@field type "task_visible"|"task_inactive"|"task_hidden"|"action"|"loader"|"mode"|""
+---@field comment? string
 -- action functions:
----@field action_1 fun()
----@field action_2 fun()
----@field action_3 fun()
+---@field action_1? fun()
+---@field action_2? fun()
+---@field action_3? fun()
 
 ---@class Dashboard
 ---@field private handler Handler
 ---@field private left_tree table NuiTree
 ---@field private right_tree table NuiTree
----@field private ui { left: { winid: integer, bufnr:integer }, right: { winid: integer, bufnr:integer } }
+---@field private popup Popup
+---@field private mappings table<string, mapping>
+---@field private candies table<string, Candy>
 local Dashboard = {}
 
 ---@param handler Handler
-function Dashboard:new(handler)
+---@param opts? dashboard_config
+---@return Dashboard
+function Dashboard:new(handler, opts)
+  if not handler then
+    error("no Handler passed to Dashboard")
+  end
+  opts = opts or {}
+
+  local candies = {}
+  if not opts.disable_candies then
+    candies = opts.candies or {}
+  end
+
   local o = {
     handler = handler,
-    ui = {
-      left = {},
-      right = {},
-    },
+    popup = Popup:new(),
+    mappings = opts.mappings or {},
+    candies = candies,
   }
   setmetatable(o, self)
   self.__index = self
   return o
-end
-
----@private
----@return integer left_bufnr
----@return integer right_bufnr
-function Dashboard:open_ui()
-  local ui_spec = vim.api.nvim_list_uis()[1]
-  local win_width = 70 / 2
-  local win_height = 20
-
-  local middle = math.floor(ui_spec.width / 2)
-  local y = math.floor((ui_spec.height - win_height) / 2)
-
-  -- create buffers
-  self.ui.left.bufnr = vim.api.nvim_create_buf(false, true)
-  self.ui.right.bufnr = vim.api.nvim_create_buf(false, true)
-  vim.api.nvim_buf_set_option(self.ui.left.bufnr, "bufhidden", "delete")
-  vim.api.nvim_buf_set_option(self.ui.right.bufnr, "bufhidden", "delete")
-
-  -- open windows
-  local window_opts = {
-    relative = "editor",
-    width = win_width,
-    height = win_height,
-    row = y,
-    border = "rounded",
-    style = "minimal",
-  }
-
-  self.ui.left.winid = vim.api.nvim_open_win(
-    self.ui.left.bufnr,
-    true,
-    vim.tbl_extend("force", window_opts, {
-      col = middle - win_width - 1,
-      border = { "╭", "─", "┬", "│", "┴", "─", "╰", "│" },
-      title_pos = "left",
-      title = "Projector",
-    })
-  )
-  self.ui.right.winid = vim.api.nvim_open_win(
-    self.ui.right.bufnr,
-    true,
-    vim.tbl_extend("force", window_opts, {
-      col = middle,
-      border = { "┬", "─", "╮", "│", "╯", "─", "┴", "│" },
-    })
-  )
-
-  -- register autocmd to automatically close the window on leave
-  local function autocmd_cb()
-    local current_buf = vim.api.nvim_get_current_buf()
-    if current_buf ~= self.ui.left.bufnr and current_buf ~= self.ui.right.bufnr then
-      self:close_ui()
-    else
-      vim.api.nvim_create_autocmd({ "BufEnter" }, {
-        callback = autocmd_cb,
-        once = true,
-      })
-    end
-  end
-  vim.api.nvim_create_autocmd({ "BufEnter" }, {
-    callback = autocmd_cb,
-    once = true,
-  })
-
-  vim.api.nvim_create_autocmd({ "BufEnter" }, {
-    buffer = self.ui.left.bufnr,
-    callback = function()
-      vim.api.nvim_win_set_option(self.ui.left.winid, "cursorline", true)
-    end,
-  })
-  vim.api.nvim_create_autocmd({ "BufLeave" }, {
-    buffer = self.ui.left.bufnr,
-    callback = function()
-      vim.api.nvim_win_set_option(self.ui.left.winid, "cursorline", false)
-    end,
-  })
-
-  vim.api.nvim_create_autocmd({ "BufEnter" }, {
-    buffer = self.ui.right.bufnr,
-    callback = function()
-      vim.api.nvim_win_set_option(self.ui.right.winid, "cursorline", true)
-    end,
-  })
-  vim.api.nvim_create_autocmd({ "BufLeave" }, {
-    buffer = self.ui.right.bufnr,
-    callback = function()
-      vim.api.nvim_win_set_option(self.ui.right.winid, "cursorline", false)
-    end,
-  })
-
-  -- set keymaps
-  vim.keymap.set("n", "q", function()
-    self:close_ui()
-  end, { silent = true, buffer = self.ui.left.bufnr })
-  vim.keymap.set("n", "q", function()
-    self:close_ui()
-  end, { silent = true, buffer = self.ui.right.bufnr })
-
-  vim.keymap.set("n", "l", function()
-    pcall(vim.api.nvim_set_current_win, self.ui.right.winid)
-  end, { silent = true, buffer = self.ui.left.bufnr })
-  vim.keymap.set("n", "l", function()
-    pcall(vim.api.nvim_set_current_win, self.ui.left.winid)
-  end, { silent = true, buffer = self.ui.right.bufnr })
-
-  vim.keymap.set("n", "h", function()
-    pcall(vim.api.nvim_set_current_win, self.ui.right.winid)
-  end, { silent = true, buffer = self.ui.left.bufnr })
-  vim.keymap.set("n", "h", function()
-    pcall(vim.api.nvim_set_current_win, self.ui.left.winid)
-  end, { silent = true, buffer = self.ui.right.bufnr })
-
-  -- set left window as current one
-  vim.api.nvim_set_current_win(self.ui.left.winid)
-
-  return self.ui.left.bufnr, self.ui.right.bufnr
-end
-
----@private
-function Dashboard:close_ui()
-  pcall(vim.api.nvim_win_close, self.ui.left.winid, true)
-  pcall(vim.api.nvim_win_close, self.ui.right.winid, true)
-  pcall(vim.api.nvim_buf_delete, self.ui.left.bufnr, {})
-  pcall(vim.api.nvim_buf_delete, self.ui.right.bufnr, {})
 end
 
 ---@private
@@ -168,9 +64,29 @@ function Dashboard:create_tree(bufnr, nodes)
     prepare_node = function(node)
       local line = NuiLine()
 
+      -- indent
       line:append(string.rep("  ", node:get_depth() - 1))
 
-      line:append(node.name)
+      -- icon
+      ---@type Candy
+      local candy = self.candies[node.type] or {}
+      if not node.type or node.type == "" then
+        candy = self.candies["none"] or {}
+      end
+      if candy.icon and candy.icon ~= "" then
+        line:append(candy.icon .. "  ", candy.icon_highlight)
+      else
+        line:append("   ")
+      end
+
+      -- name
+      line:append(node.name, candy.text_highlight)
+
+      -- comment
+      if node.comment then
+        candy = self.candies["comment"]
+        line:append("  (" .. node.comment .. ")", candy.text_highlight)
+      end
 
       return line
     end,
@@ -208,8 +124,7 @@ function Dashboard:get_active_task_nodes()
       local node = NuiTree.Node({
         id = id,
         name = action.label,
-        type = "",
-        state = "normal",
+        type = "action",
         action_1 = function()
           action.action()
         end,
@@ -226,23 +141,20 @@ function Dashboard:get_active_task_nodes()
 
   for _, task in ipairs(self.handler:get_tasks { live = true }) do
     local is_visible = task:is_visible()
-    local state = "active"
+    local type = "task_hidden"
     local meta = task:metadata()
     local action_1
     if is_visible then
-      state = "special"
+      type = "task_visible"
     end
-    if not is_visible then
-      action_1 = function()
-        self.handler:show_task(meta.id)
-      end
+    action_1 = function()
+      self.handler:show_task(meta.id)
     end
 
     local node = NuiTree.Node({
       id = meta.id,
       name = meta.name,
-      type = "task",
-      state = state,
+      type = type,
       action_1 = action_1,
       action_2 = function()
         self.handler:kill_task { id = task:metadata().id, restart = true }
@@ -272,10 +184,15 @@ end
 ---@private
 ---@return Node[]
 function Dashboard:get_inactive_task_nodes()
-  local nodes = {}
+  local normal_nodes = {}
+
+  -- nodes that are hidden in the menu (because of presentation options)
+  local menuhidden_nodes = {}
 
   local inactive_tasks = self.handler:get_tasks { live = false }
   for _, task in ipairs(inactive_tasks) do
+    -- handle modes
+    local comment
     local modes = task:get_modes()
     local action
     local children = {}
@@ -283,6 +200,7 @@ function Dashboard:get_inactive_task_nodes()
       action = function()
         task:run(modes[1])
       end
+      comment = modes[1]
     elseif #modes > 1 then
       for _, mode in ipairs(modes) do
         table.insert(
@@ -291,7 +209,6 @@ function Dashboard:get_inactive_task_nodes()
             id = task:metadata().id .. mode,
             name = mode,
             type = "mode",
-            state = "normal",
             action_1 = function()
               task:run(mode)
             end,
@@ -300,19 +217,41 @@ function Dashboard:get_inactive_task_nodes()
       end
     end
 
-    table.insert(
-      nodes,
-      NuiTree.Node({
-        id = task:metadata().id,
-        name = task:metadata().name,
-        type = "task",
-        state = "normal",
-        action_1 = action,
-      }, children)
-    )
+    local node = NuiTree.Node({
+      id = task:metadata().id,
+      name = task:metadata().name,
+      comment = comment,
+      type = "task_inactive",
+      action_1 = action,
+    }, children)
+
+    -- put in appropriate list based on presentation
+    if task:presentation().menu.show then
+      table.insert(normal_nodes, node)
+    else
+      table.insert(menuhidden_nodes, node)
+    end
   end
 
-  return nodes
+  -- if there aren't any normal nodes, return hidden ones as normal
+  if #normal_nodes < 1 then
+    return menuhidden_nodes
+  end
+
+  -- if there aren't any hidden nodes, return just the normal ones
+  if #menuhidden_nodes < 1 then
+    return normal_nodes
+  end
+
+  -- if there are hidden and normal nodes, add hidden ones under a fold
+
+  local hidden_fold_node = NuiTree.Node({
+    id = "__menuhidden_nodes_ui__",
+    name = "hidden tasks",
+    type = "",
+  }, menuhidden_nodes)
+
+  return utils.merge_lists(normal_nodes, self:get_separator_nodes(1), { hidden_fold_node })
 end
 
 ---@private
@@ -328,8 +267,7 @@ function Dashboard:get_separator_nodes(count)
     local node = NuiTree.Node {
       id = "__separator_node_" .. i .. tostring(math.random()),
       name = "",
-      type = "separator",
-      state = "normal",
+      type = "",
     }
     table.insert(nodes, node)
   end
@@ -351,7 +289,6 @@ function Dashboard:get_loader_nodes()
         id = tostring(math.random()),
         name = "asdf",
         type = "loader",
-        state = "normal",
         action_1 = function() end,
       }
     )
@@ -365,42 +302,67 @@ end
 ---@param bufnr integer
 function Dashboard:map_keys(tree, bufnr)
   -- action_1
-  vim.keymap.set("n", "<CR>", function()
+  local m = self.mappings.action_1 or { key = "<CR>", mode = "n" }
+  vim.keymap.set(m.mode, m.key, function()
     local node = tree:get_node()
     if not node then
       return
     end
     if type(node.action_1) == "function" then
       node.action_1()
-      self:close_ui()
+      self.popup:close()
       return
     end
 
     if node:has_children() then
-      node:expand()
-      tree:render()
+      if node:expand() then
+        tree:render()
+      end
     end
   end, { silent = true, buffer = bufnr })
+
   -- action_2
-  vim.keymap.set("n", "r", function()
+  m = self.mappings.action_2 or { key = "r", mode = "n" }
+  vim.keymap.set(m.mode, m.key, function()
     local node = tree:get_node()
     if not node then
       return
     end
     if type(node.action_2) == "function" then
       node.action_2()
-      self:close_ui()
+      self.popup:close()
     end
   end, { silent = true, buffer = bufnr })
+
   -- action_3
-  vim.keymap.set("n", "d", function()
+  m = self.mappings.action_3 or { key = "d", mode = "n" }
+  vim.keymap.set(m.mode, m.key, function()
     local node = tree:get_node()
     if not node then
       return
     end
     if type(node.action_3) == "function" then
       node.action_3()
-      self:close_ui()
+      self.popup:close()
+    end
+  end, { silent = true, buffer = bufnr })
+
+  -- toggle fold
+  m = self.mappings.toggle_fold or { key = "o", mode = "n" }
+  vim.keymap.set(m.mode, m.key, function()
+    local node = tree:get_node()
+    if not node then
+      return
+    end
+    local toggled
+    if node:is_expanded() then
+      toggled = node:collapse()
+    else
+      toggled = node:expand()
+    end
+
+    if toggled then
+      tree:render()
     end
   end, { silent = true, buffer = bufnr })
 end
@@ -412,13 +374,21 @@ function Dashboard:open()
     return
   end
 
-  local left_bufnr, right_bufnr = self:open_ui()
+  local left_bufnr, right_bufnr = self.popup:open()
 
   self.left_tree = self:create_tree(
     left_bufnr,
     utils.merge_lists(self:get_inactive_task_nodes(), self:get_separator_nodes(3), self:get_loader_nodes())
   )
-  self.right_tree = self:create_tree(right_bufnr, self:get_active_task_nodes())
+
+  local active_nodes = self:get_active_task_nodes()
+  self.right_tree = self:create_tree(right_bufnr, active_nodes)
+
+  if #active_nodes > 0 then
+    self.popup:set_focus("right")
+  else
+    self.popup:set_focus("left")
+  end
 
   self:map_keys(self.left_tree, left_bufnr)
   self:map_keys(self.right_tree, right_bufnr)

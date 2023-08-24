@@ -39,9 +39,12 @@ local utils = require("projector.utils")
 -- Metadata of a task
 ---@alias task_meta { id: string, name: string, scope: string, group: string }
 
+-- Presentation of the task in ui
+---@alias task_presentation { menu: { show: boolean } }
+
 ---@class Task
 ---@field private meta task_meta
----@field private presentation { menu: { show: boolean } }
+---@field private present task_presentation
 ---@field private configuration task_configuration Configuration of the task (command, args, env, cwd...)
 ---@field private modes task_mode[] What can the task do (debug, task)
 ---@field private last_mode task_mode Mode that was selected previously
@@ -51,11 +54,12 @@ local utils = require("projector.utils")
 ---@field private output_builders table<task_mode, OutputBuilder> task builders per mode
 ---@field private output Output currently active output
 ---@field private expand_config_variables fun(configuration: task_configuration):task_configuration Function that gets assigned to a task by a loader
+---@field private on_exec fun() function to run before executing the task
 local Task = {}
 
 ---@param configuration task_configuration
 ---@param output_builders OutputBuilder[] map of available output builders
----@param opts? { dependency_mode: task_mode, expand_config: fun(config: task_configuration):task_configuration }
+---@param opts? { dependency_mode: task_mode, on_exec: fun(), expand_config: fun(config: task_configuration):task_configuration }
 ---@return Task|nil
 function Task:new(configuration, output_builders, opts)
   if not configuration then
@@ -106,7 +110,7 @@ function Task:new(configuration, output_builders, opts)
       group = group,
     },
     configuration = configuration,
-    presentation = presentation,
+    present = presentation,
     modes = modes,
     last_mode = nil,
     dependency_mode = opts.dependency_mode,
@@ -117,6 +121,7 @@ function Task:new(configuration, output_builders, opts)
     expand_config_variables = opts.expand_config or function(c)
       return c
     end,
+    on_exec = opts.on_exec or function() end,
   }
   setmetatable(o, self)
   self.__index = self
@@ -127,6 +132,9 @@ end
 ---@param mode? task_mode
 ---@param callback? fun(success: boolean)
 function Task:run(mode, callback)
+  -- run on_exec hook
+  self.on_exec()
+
   -- check parameters
   callback = callback or function(_) end
   mode = mode or self.last_mode or self.modes[1]
@@ -267,6 +275,11 @@ function Task:actions()
     return o:actions() or {}
   end
   return {}
+end
+
+---@return task_presentation
+function Task:presentation()
+  return self.present
 end
 
 return Task

@@ -141,6 +141,9 @@ function Lookup:get_selected(live)
     task = self:select_next(true)
   end
 
+  -- set the task as selected
+  self:set_selected(task:metadata().id)
+
   return task
 end
 

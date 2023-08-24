@@ -1,16 +1,21 @@
 local Handler = require("projector.handler")
 local Dashboard = require("projector.dashboard")
 local utils = require("projector.utils")
+local default_config = require("projector.config")
 
 ---@type Handler
 local handler = nil
 ---@type Dashboard
 local dashboard = nil
 
--- Function for checking if handler has been initialized
+-- Function for checking if setup function has been called
+local warning_displayed = false
 local function check_setup()
   if not handler or not dashboard then
-    utils.log("warn", '"projector.setup()" has not been called yet!')
+    if not warning_displayed then
+      utils.log("warn", '"projector.setup()" has not been called yet!')
+      warning_displayed = true
+    end
     return false
   end
   return true
@@ -18,50 +23,30 @@ end
 
 local M = {}
 
----@type config
+---@type Config
 M.config = {}
 
 -- setup function
----@param config config
+---@param config Config
 function M.setup(config)
-  -- combine default config with user config
-  M.config = require("projector.config")
-  if config then
-    -- loaders
-    if config.loaders then
-      M.config.loaders = config.loaders
-    end
-    -- outputs
-    if config.outputs then
-      if config.outputs.task then
-        M.config.outputs.task = config.outputs.task
-      end
-      if config.outputs.debug then
-        M.config.outputs.debug = config.outputs.debug
-      end
-      if config.outputs.database then
-        M.config.outputs.database = config.outputs.database
-      end
-    end
-    -- display_format
-    if config.display_format and type(config.display_format) == "function" then
-      M.config.display_format = config.display_format
-    end
-    -- automatic configuration reload
-    if config.automatic_reload ~= nil then
-      M.config.automatic_reload = config.automatic_reload
-    end
-    -- icons
-    if config.icons then
-      M.config.icons = vim.tbl_deep_extend("force", M.config.icons, config.icons)
-    end
-  end
+  ---@type Config
+  local opts = vim.tbl_deep_extend("force", default_config, config)
+
+  -- validate config
+  vim.validate {
+    dashboard_mappings = { opts.dashboard.mappings, "table" },
+    dashboard_candies = { opts.dashboard.candies, "table" },
+    dashboard_disable_candies = { opts.dashboard.disable_candies, "boolean" },
+  }
+
+  -- TODO: remove
+  M.config = opts
 
   ---@type Handler
   handler = Handler:new()
   handler:load_sources()
 
-  dashboard = Dashboard:new(handler)
+  dashboard = Dashboard:new(handler, opts.dashboard)
 end
 
 function M.reload()
@@ -118,7 +103,7 @@ function M.status()
   if not check_setup() then
     return ""
   end
-  return table.concat(handler:dashboard(), " ")
+  return table.concat(handler:status(), " ")
 end
 
 function M.handler()

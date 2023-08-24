@@ -64,7 +64,7 @@ end
 ---@param display display
 ---@return display
 function M.map_icons(display)
-  ---@type config
+  ---@type Config
   local config = require("projector").config
 
   if not config.icons.enable then
