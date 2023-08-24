@@ -1,3 +1,5 @@
+local MockedTask = require("projector.handler.task_mock")
+
 -- Lookup is a "dumb" storage for sources and connections
 -- and their relations
 ---@class Lookup
@@ -134,7 +136,7 @@ end
 ---@param live? boolean select the first live task if the selected one is not running
 ---@return Task
 function Lookup:get_selected(live)
-  local task = self.tasks[self.selected]
+  local task = self.tasks[self.selected] or self:select_next()
 
   if live and not task:is_live() then
     task = self:select_next(true)
@@ -180,7 +182,7 @@ function Lookup:select_next(live)
 
   self.selected = selected or self.selected
 
-  return self.tasks[self.selected]
+  return self.tasks[self.selected] or MockedTask:new()
 end
 
 ---@param live? boolean should the previous task be live
@@ -211,7 +213,7 @@ function Lookup:select_prev(live)
   self.selected = selected or self.selected
 
   -- and show only this one
-  return self.tasks[self.selected]
+  return self.tasks[self.selected] or MockedTask:new()
 end
 
 return Lookup

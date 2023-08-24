@@ -80,6 +80,10 @@ local config = {
         text_highlight = "MoreMsg",
       },
     },
+    popup = {
+      width = 100,
+      height = 20,
+    },
   },
   loaders = {
     -- {

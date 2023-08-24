@@ -46,7 +46,7 @@ local utils = require("projector.utils")
 ---@field private meta task_meta
 ---@field private present task_presentation
 ---@field private configuration task_configuration Configuration of the task (command, args, env, cwd...)
----@field private modes task_mode[] What can the task do (debug, task)
+---@field private modes_list task_mode[] What can the task do (debug, task)
 ---@field private last_mode task_mode Mode that was selected previously
 ---@field private dependency_mode task_mode mode to run the dependencies in
 ---@field private dependencies { task: Task, status: "done"|"error"|"" }[] List of dependent tasks
@@ -83,7 +83,7 @@ function Task:new(configuration, output_builders, opts)
     meta = {},
     configuration = configuration,
     present = {},
-    modes = modes,
+    modes_list = modes,
     last_mode = nil,
     dependency_mode = opts.dependency_mode,
     dependencies = {},
@@ -145,7 +145,7 @@ function Task:run(opts)
 
   -- setup options
   opts = opts or {}
-  local mode = opts.mode or self.last_mode or self.modes[1]
+  local mode = opts.mode or self.last_mode or self.modes_list[1]
   self.last_mode = mode
   local callback = opts.callback or function(_) end
   local restart = opts.restart or false
@@ -158,7 +158,7 @@ function Task:run(opts)
   end
 
   -- check if task has the capability to run the selected mode
-  if not utils.contains(self.modes, mode) then
+  if not utils.contains(self.modes_list, mode) then
     callback(false)
     return
   end
@@ -233,10 +233,11 @@ end
 
 ---@return task_mode[] all # all modes
 ---@return task_mode? latest # last mode that this task was ran in
-function Task:get_modes()
-  return self.modes, self.last_mode
+function Task:modes()
+  return self.modes_list, self.last_mode
 end
 
+---@return boolean
 function Task:is_live()
   local o = self.output
   if o and o:status() ~= "inactive" and o:status() ~= "" then
@@ -245,6 +246,7 @@ function Task:is_live()
   return false
 end
 
+---@return boolean
 function Task:is_visible()
   local o = self.output
   if o and o:status() == "visible" then

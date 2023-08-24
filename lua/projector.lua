@@ -37,6 +37,8 @@ function M.setup(config)
     dashboard_mappings = { opts.dashboard.mappings, "table" },
     dashboard_candies = { opts.dashboard.candies, "table" },
     dashboard_disable_candies = { opts.dashboard.disable_candies, "boolean" },
+    dashboard_popup_width = { opts.dashboard.popup.width, "number" },
+    dashboard_popup_height = { opts.dashboard.popup.height, "number" },
   }
 
   -- TODO: remove

@@ -1,5 +1,7 @@
 local utils = require("projector.utils")
 local Popup = require("projector.dashboard.popup")
+local convert = require("projector.dashboard.convert")
+
 local NuiTree = require("nui.tree")
 local NuiLine = require("nui.line")
 
@@ -8,7 +10,7 @@ local NuiLine = require("nui.line")
 ---@field icon_highlight string
 ---@field text_highlight string
 
----@alias dashboard_config { mappings: table<string, mapping>, disable_candies: boolean, candies: table<string, Candy> }
+---@alias dashboard_config { mappings: table<string, mapping>, disable_candies: boolean, candies: table<string, Candy>, popup: popup_config }
 
 ---@class Node
 ---@field id string
@@ -39,7 +41,7 @@ function Dashboard:new(opts)
   end
 
   local o = {
-    popup = Popup:new(),
+    popup = Popup:new(opts.popup),
     mappings = opts.mappings or {},
     candies = candies,
   }
@@ -96,207 +98,6 @@ function Dashboard:create_tree(bufnr, nodes)
   tree:set_nodes(nodes)
 
   return tree
-end
-
--- retrieve nodes from active tasks (hidden and visible)
----@private
----@param tasks Task[] list of all tasks
----@return Node[]
-function Dashboard:get_active_task_nodes(tasks)
-  local visible_nodes = {}
-  local hidden_nodes = {}
-
-  ---@param actions task_action[]
-  ---@param parent_id string
-  ---@return Node[]
-  local function parse_actions(actions, parent_id)
-    actions = actions or {}
-    local action_nodes = {}
-    for _, action in ipairs(actions) do
-      local id = parent_id .. action.label
-
-      -- create action node
-      local node = NuiTree.Node({
-        id = id,
-        name = action.label,
-        type = "action",
-        action_1 = function()
-          action.action()
-        end,
-      }, parse_actions(action.nested, id))
-
-      -- expand by default (show nested actions)
-      node:expand()
-
-      table.insert(action_nodes, node)
-    end
-
-    return action_nodes
-  end
-
-  for _, task in ipairs(tasks) do
-    if task:is_live() then
-      local is_visible = task:is_visible()
-      local type = "task_hidden"
-      local meta = task:metadata()
-      if is_visible then
-        type = "task_visible"
-      end
-      local _, current_mode = task:get_modes()
-
-      local node = NuiTree.Node({
-        id = meta.id,
-        name = meta.name,
-        type = type,
-        comment = current_mode,
-        -- show
-        action_1 = function()
-          task:show()
-        end,
-        -- restart
-        action_2 = function()
-          task:run { restart = true }
-        end,
-        -- kill
-        action_3 = function()
-          task:kill()
-        end,
-      }, parse_actions(task:actions(), meta.id))
-
-      -- expand by default (show actions)
-      node:expand()
-
-      if is_visible then
-        table.insert(visible_nodes, node)
-      else
-        table.insert(hidden_nodes, node)
-      end
-    end
-  end
-
-  -- merge visible and hidden tasks together
-  vim.list_extend(visible_nodes, hidden_nodes)
-
-  return visible_nodes
-end
-
--- retrieve nodes from inactive tasks
----@private
----@param tasks Task[] list of all tasks
----@return Node[]
-function Dashboard:get_inactive_task_nodes(tasks)
-  local normal_nodes = {}
-
-  -- nodes that are hidden in the menu (because of presentation options)
-  local menuhidden_nodes = {}
-
-  for _, task in ipairs(tasks) do
-    if not task:is_live() then
-      -- handle modes
-      local comment
-      local modes, _ = task:get_modes()
-      local action
-      local children = {}
-      if #modes == 1 then
-        action = function()
-          task:run { mode = modes[1] }
-        end
-        comment = modes[1]
-      elseif #modes > 1 then
-        for _, mode in ipairs(modes) do
-          table.insert(
-            children,
-            NuiTree.Node {
-              id = task:metadata().id .. mode,
-              name = mode,
-              type = "mode",
-              action_1 = function()
-                task:run { mode = mode }
-              end,
-            }
-          )
-        end
-      end
-
-      local node = NuiTree.Node({
-        id = task:metadata().id,
-        name = task:metadata().name,
-        comment = comment,
-        type = "task_inactive",
-        action_1 = action,
-      }, children)
-
-      -- put in appropriate list based on presentation
-      if task:presentation().menu.show then
-        table.insert(normal_nodes, node)
-      else
-        table.insert(menuhidden_nodes, node)
-      end
-    end
-  end
-
-  -- if there aren't any normal nodes, return hidden ones as normal
-  if #normal_nodes < 1 then
-    return menuhidden_nodes
-  end
-
-  -- if there aren't any hidden nodes, return just the normal ones
-  if #menuhidden_nodes < 1 then
-    return normal_nodes
-  end
-
-  -- if there are hidden and normal nodes, add hidden ones under a fold
-
-  local hidden_fold_node = NuiTree.Node({
-    id = "__menuhidden_nodes_ui__",
-    name = "hidden tasks",
-    type = "",
-  }, menuhidden_nodes)
-
-  return utils.merge_lists(normal_nodes, self:get_separator_nodes(1), { hidden_fold_node })
-end
-
----@private
----@param count? integer default is 1
----@return Node[]
-function Dashboard:get_separator_nodes(count)
-  if not count or count < 1 then
-    count = 1
-  end
-
-  local nodes = {}
-  for i = 1, count do
-    local node = NuiTree.Node {
-      id = "__separator_node_" .. i .. tostring(math.random()),
-      name = "",
-      type = "",
-    }
-    table.insert(nodes, node)
-  end
-
-  return nodes
-end
-
--- retrieve loader nodes
----@private
----@param loaders Loader[] list of loaders
----@return Node[]
-function Dashboard:get_loader_nodes(loaders)
-  local nodes = {}
-
-  for _, loader in ipairs(loaders) do
-    table.insert(
-      nodes,
-      NuiTree.Node {
-        id = tostring(math.random()),
-        name = "asdf",
-        type = "loader",
-        action_1 = function() end,
-      }
-    )
-  end
-
-  return nodes
 end
 
 ---@private
@@ -373,17 +174,37 @@ end
 ---@param tasks Task[] list of tasks to display
 ---@param loaders Loader[] list of loaders to display
 function Dashboard:open(tasks, loaders)
+  -- open popup
   local left_bufnr, right_bufnr = self.popup:open()
 
+  --
   -- left panel
-  self.left_tree = self:create_tree(
-    left_bufnr,
-    utils.merge_lists(self:get_inactive_task_nodes(tasks), self:get_separator_nodes(3), self:get_loader_nodes(loaders))
-  )
+  --
+  -- get nodes from tasks and loaders or show help
+  local inactive_task_nodes = convert.inactive_task_nodes(tasks)
+  if #tasks < 1 then
+    inactive_task_nodes = convert.help_no_task_nodes()
+  end
+  local loader_nodes = convert.loader_nodes(loaders)
+  if #loaders < 1 then
+    loader_nodes = convert.help_no_loader_nodes()
+  end
+
+  -- calculate number of separators so that loaders are near the bottom of the window
+  local _, height = self.popup:dimensions()
+  local n_sep = height - #inactive_task_nodes - #loader_nodes - 3
+  if n_sep < 1 then
+    n_sep = 1
+  end
+
+  self.left_tree =
+    self:create_tree(left_bufnr, utils.merge_lists(inactive_task_nodes, convert.separator_nodes(n_sep), loader_nodes))
   self:map_keys(self.left_tree, left_bufnr)
 
+  --
   -- right panel
-  local active_nodes = self:get_active_task_nodes(tasks)
+  --
+  local active_nodes = convert.active_task_nodes(tasks)
   self.right_tree = self:create_tree(right_bufnr, active_nodes)
   self:map_keys(self.right_tree, right_bufnr)
 

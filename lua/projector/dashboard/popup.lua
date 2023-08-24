@@ -1,13 +1,22 @@
 ---@class Popup
 ---@field private left { winid: integer, bufnr:integer }
 ---@field private right { winid: integer, bufnr:integer }
+---@field private width integer
+---@field private height integer
 local Popup = {}
 
+---@alias popup_config { width: integer, height: integer }
+
+---@param opts? popup_config
 ---@return Popup
-function Popup:new()
+function Popup:new(opts)
+  opts = opts or {}
+
   local o = {
     left = {},
     right = {},
+    width = opts.width or 100,
+    height = opts.height or 20,
   }
   setmetatable(o, self)
   self.__index = self
@@ -18,11 +27,11 @@ end
 ---@return integer right_bufnr
 function Popup:open()
   local ui_spec = vim.api.nvim_list_uis()[1]
-  local win_width = 70 / 2
-  local win_height = 20
+  local width = self.width / 2
+  local height = self.height
 
   local middle = math.floor(ui_spec.width / 2)
-  local y = math.floor((ui_spec.height - win_height) / 2)
+  local y = math.floor((ui_spec.height - height) / 2)
 
   -- create buffers
   self.left.bufnr = vim.api.nvim_create_buf(false, true)
@@ -33,8 +42,8 @@ function Popup:open()
   -- open windows
   local window_opts = {
     relative = "editor",
-    width = win_width,
-    height = win_height,
+    width = width,
+    height = height,
     row = y,
     border = "rounded",
     style = "minimal",
@@ -44,7 +53,7 @@ function Popup:open()
     self.left.bufnr,
     true,
     vim.tbl_extend("force", window_opts, {
-      col = middle - win_width - 1,
+      col = middle - width - 1,
       border = { "╭", "─", "┬", "│", "┴", "─", "╰", "│" },
       title_pos = "left",
       title = "Projector",
@@ -58,6 +67,10 @@ function Popup:open()
       border = { "┬", "─", "╮", "│", "╯", "─", "┴", "│" },
     })
   )
+
+  -- disable line wrap
+  vim.api.nvim_win_set_option(self.left.winid, "wrap", false)
+  vim.api.nvim_win_set_option(self.right.winid, "wrap", false)
 
   -- register autocmd to automatically close the window on leave
   local function autocmd_cb()
@@ -137,6 +150,12 @@ function Popup:close()
   pcall(vim.api.nvim_win_close, self.right.winid, true)
   pcall(vim.api.nvim_buf_delete, self.left.bufnr, {})
   pcall(vim.api.nvim_buf_delete, self.right.bufnr, {})
+end
+
+---@return integer width
+---@return integer height
+function Popup:dimensions()
+  return self.width, self.height
 end
 
 ---@param where "left"|"right"
