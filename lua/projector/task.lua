@@ -14,6 +14,8 @@ local utils = require("projector.utils")
 ---@field presentation presentation|presentation[]
 ---@field dependencies task_id[]
 ---@field after task_id
+---@field evaluate task_mode -- evaluate the specified output immediately if any mode matches the specified one
+---
 ---@field env table<string, string>
 ---@field cwd string
 ---@field args string[]
@@ -135,6 +137,12 @@ function Task:update_config(configuration)
     scope = scope,
     group = group,
   }
+
+  -- evaluate the possibly specified output
+  if utils.contains(self.modes_list, configuration.evaluate) then
+    self.output = self.output_builders[configuration.evaluate]:build()
+    self.output:init(self.expand_config_variables(self.configuration), function(_) end)
+  end
 end
 
 -- Run a task and hadle it's dependencies
@@ -205,7 +213,10 @@ function Task:run(opts)
   end
 
   -- build the output and run the task
-  self.output = self.output_builders[mode]:build()
+  if mode ~= self.last_mode or not self.output then
+    self.output = self.output_builders[mode]:build()
+  end
+  print("he")
   self.output:init(self.expand_config_variables(self.configuration), cb)
 end
 

@@ -1,64 +1,71 @@
-local Output = require("projector.contract.output")
 local has_dadbod_ui = vim.fn.exists(":DBUI") == 2
 
----@type Output
-local DadbodOutput = Output:new()
+---@class DadbodOutput: Output
+---@field private state output_status
+---@field private first_init boolean this init is the first one
+local DadbodOutput = {}
 
----@param configuration task_configuration
----@diagnostic disable-next-line: unused-local
-function DadbodOutput:init(configuration)
-  -- apply dadbod configuration variables
-  if not configuration then
-    self:done(false)
-    return
-  end
+---@return DadbodOutput
+function DadbodOutput:new()
+  local o = {
+    state = "hidden",
+    first_init = true,
+  }
+  setmetatable(o, self)
+  self.__index = self
+  return o
+end
 
-  for setting, config in pairs(configuration) do
-    if setting == "databases" then
-      vim.g["dbs"] = config
-    elseif setting == "queries" then
-      vim.g["db_ui_table_helpers"] = config
-    end
-  end
+---@return output_status
+function DadbodOutput:status()
+  return self.state or "hidden"
+end
 
-  if has_dadbod_ui then
-    self.status = "hidden"
+---@param _ task_configuration
+---@param callback fun(success: boolean)
+function DadbodOutput:init(_, callback)
+  -- due to evaluation specification in the
+  -- output builder, we don't have to do anything
+  -- for the first time
+
+  if not self.first_init then
     self:show()
-  else
-    self.status = "inactive"
   end
 
-  self:done(true)
+  self.first_init = false
+
+  callback(true)
 end
 
 function DadbodOutput:show()
-  if has_dadbod_ui then
-    vim.cmd(":DBUI")
-
-    -- Autocommand for current buffer
-    vim.api.nvim_create_autocmd({ "BufDelete", "BufUnload" }, {
-      buffer = vim.fn.bufnr(),
-      callback = function()
-        self.status = "hidden"
-      end,
-    })
-
-    self.status = "visible"
+  if not has_dadbod_ui then
+    return
   end
+
+  vim.cmd(":DBUI")
+
+  -- Autocommand for current buffer
+  vim.api.nvim_create_autocmd({ "BufDelete", "BufUnload" }, {
+    buffer = vim.api.nvim_get_current_buf(),
+    callback = function()
+      self.state = "hidden"
+    end,
+  })
+
+  self.state = "visible"
 end
 
 function DadbodOutput:hide()
-  if has_dadbod_ui then
-    vim.cmd('execute "normal \\<Plug>(DBUI_Quit)"')
-    self.status = "hidden"
+  if not has_dadbod_ui then
+    return
   end
+
+  vim.cmd(":DBUIClose")
+  self.state = "hidden"
 end
 
 function DadbodOutput:kill()
   self:hide()
 end
-
----@return task_action[]|nil
-function DadbodOutput:list_actions() end
 
 return DadbodOutput

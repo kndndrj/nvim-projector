@@ -7,6 +7,7 @@ local utils = require("projector.utils")
 ---@field private state output_status
 local BuiltinOutput = {}
 
+---@return BuiltinOutput
 function BuiltinOutput:new()
   local o = {}
   setmetatable(o, self)
@@ -14,6 +15,7 @@ function BuiltinOutput:new()
   return o
 end
 
+---@return output_status
 function BuiltinOutput:status()
   return self.state or "inactive"
 end

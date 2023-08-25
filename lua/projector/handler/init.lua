@@ -22,7 +22,10 @@ function Handler:new(dashboard)
     dashboard = dashboard,
     tasks = {},
     lookup = Lookup:new(),
-    output_builders = { require("projector.outputs").BuiltinOutputBuilder },
+    output_builders = {
+      require("projector.outputs").BuiltinOutputBuilder,
+      require("projector.outputs").DadbodOutputBuilder,
+    },
     loaders = {},
   }
   setmetatable(o, self)
@@ -60,7 +63,8 @@ function Handler:preprocess(records)
       if selected[id] and selected[id].output_builders then
         table.insert(selected[id].output_builders, builder)
       else
-        selected[id] = { config = cfg, output_builders = { builder }, loader = records[id].loader }
+        local rec = records[id] or {}
+        selected[id] = { config = cfg, output_builders = { builder }, loader = rec.loader }
       end
     end
   end

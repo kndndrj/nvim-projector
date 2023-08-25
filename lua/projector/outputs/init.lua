@@ -1,5 +1,6 @@
 local utils = require("projector.utils")
 local BuiltinOutput = require("projector.outputs.builtin")
+local DadbodOutput = require("projector.outputs.dadbod")
 
 local M = {}
 
@@ -11,7 +12,7 @@ local M = {}
 ---@field kill fun(self: Output) function to kill the output execution
 ---@field show fun(self: Output) function to show the ouput on screen
 ---@field hide fun(self: Output) function to hide the output off the screen
----@field actions? fun(self: Output):task_action[ ] function to list any available actions of the output
+---@field actions? fun(self: Output):task_action[] function to list any available actions of the output
 
 ---@alias configuraiton_picks table<string, task_configuration> map of task_id: task_configuration for picking tasks that suit the outputs
 
@@ -59,6 +60,64 @@ function M.BuiltinOutputBuilder:preprocess(selection)
   end
 
   return picks
+end
+
+--
+-- Builder for the DadbodOutput
+--
+---@class DadbodOutputBuilder: OutputBuilder
+M.DadbodOutputBuilder = {}
+
+-- new builder
+---@return DadbodOutputBuilder
+function M.DadbodOutputBuilder:new()
+  local o = {}
+  setmetatable(o, self)
+  self.__index = self
+  return o
+end
+
+-- build a new output
+---@return DadbodOutput
+function M.DadbodOutputBuilder:build()
+  return DadbodOutput:new()
+end
+
+---@return task_mode mode
+function M.DadbodOutputBuilder:mode_name()
+  return "dadbod"
+end
+
+---@param selection configuraiton_picks
+---@return configuraiton_picks # picked configs
+function M.DadbodOutputBuilder:preprocess(selection)
+  -- get databases and queries from all configs
+  local databases = {} -- only supports list
+  local queries = {} -- table of dadbod-ui structured table helpers
+  for _, config in pairs(selection) do
+    if vim.tbl_islist(config.databases) then
+      vim.list_extend(databases, config.databases)
+    end
+
+    if type(config.queries) == "table" then
+      queries = vim.tbl_deep_extend("keep", queries, config.queries)
+    end
+  end
+
+  -- register in global dadbod variables
+  vim.g["dbs"] = databases
+  vim.g["db_ui_table_helpers"] = queries
+
+  -- return a single manufactured task capable of running in DadbodOutput
+  ---@type configuraiton_picks
+  return {
+    ["__dadbod_output_builder_task_id__"] = {
+      name = "Database",
+      scope = "db",
+      group = "db",
+      evaluate = self:mode_name(),
+    },
+  }
 end
 
 return M
