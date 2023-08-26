@@ -2,15 +2,36 @@
 
 ---@class Config
 ---@field dashboard dashboard_config
----@field loaders extension_config[]
----@field outputs { task: extension_config, debug: extension_config, database: extension_config }
---
----@field display_format fun(loader:string, scope:string, group:string, modes:string, name:string): string Function for fromating select menu
----@field icons { enable: boolean, scopes: table<string, string>, groups: table<string, string>, loaders: table<string, string> , modes: table<string, string> }
----@field automatic_reload boolean Reload configurations automatically before displaying task selector
+---@field loaders Loader[]
+---@field outputs OutputBuilder[]
+---@field core handler_config
+
+local M = {}
+
+local task_output_builder = require("projector.outputs").TaskOutputBuilder:new()
 
 ---@type Config
-local config = {
+M.default = {
+  core = {
+    depencency_mode = task_output_builder:mode_name(),
+    automatic_reload = false,
+  },
+
+  loaders = {
+    require("projector.loaders").BuiltinLoader:new {
+      path = function()
+        return vim.fn.getcwd() .. "/.vim/projector.json"
+      end,
+    },
+    require("projector.loaders").DapLoader:new(),
+  },
+
+  outputs = {
+    task_output_builder,
+    require("projector.outputs").DadbodOutputBuilder:new(),
+    require("projector.outputs").DapOutputBuilder:new(),
+  },
+
   -- dashboard (popup) settings
   dashboard = {
     -- key mappings
@@ -35,7 +56,6 @@ local config = {
     -- eye candy settings:
     disable_candies = false,
     candies = {
-      --"task_visible"|"task_inactive"|"task_hidden"|"action"|"loader"|"mode"|""
       -- these represent node types
       task_visible = {
         icon = "",
@@ -85,51 +105,6 @@ local config = {
       height = 20,
     },
   },
-  loaders = {
-    -- {
-    --   module = "builtin",
-    --   options = {
-    --     path = vim.fn.getcwd() .. "/.vim/projector.json",
-    --     configs = nil,
-    --   },
-    -- },
-    -- {
-    --   module = "dap",
-    --   options = nil,
-    -- },
-  },
-  outputs = {
-    task = {
-      module = require("projector.loaders.builtin"),
-      options = nil,
-    },
-    -- debug = {
-    --   module = "dap",
-    --   options = nil,
-    -- },
-    -- database = {
-    --   module = "dadbod",
-    --   options = nil,
-    -- },
-  },
-  display_format = function(loader, scope, group, modes, name)
-    return loader .. "  " .. scope .. "  " .. group .. "  " .. modes .. "  " .. name
-  end,
-  automatic_reload = false,
-  icons = {
-    enable = true,
-    scopes = {
-      global = "",
-      project = "",
-    },
-    groups = {},
-    loaders = {},
-    modes = {
-      task = "",
-      debug = "󰃤",
-      database = "",
-    },
-  },
 }
 
-return config
+return M

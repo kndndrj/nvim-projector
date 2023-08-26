@@ -143,9 +143,13 @@ function Task:update_config(configuration)
   }
 
   -- evaluate the possibly specified output
-  if utils.contains(self.modes_list, configuration.evaluate) then
-    self.output = self.output_builders[configuration.evaluate]:build()
-    self.output:init(self.expand_config_variables(self.configuration), function(_) end)
+  local eval_mode = configuration.evaluate
+  if utils.contains(self.modes_list, eval_mode) then
+    if eval_mode ~= self.last_mode or not self.output then
+      self.output = self.output_builders[eval_mode]:build()
+      self.output:init(self.expand_config_variables(self.configuration), function(_) end)
+    end
+    self.last_mode = eval_mode
   end
 end
 

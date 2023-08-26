@@ -53,9 +53,11 @@ function Lookup:add_tasks(tasks)
   for _, task in ipairs(tasks) do
     local id = task:metadata().id
 
-    -- don't update live tasks
-    local old = self.tasks[id]
-    if not old or not old:is_live() then
+    -- if the task with id already exists, just update it's config
+    local existing = self.tasks[id]
+    if existing then
+      existing:update_config(task:config())
+    else
       self.tasks[id] = task
     end
   end

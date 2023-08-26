@@ -1,39 +1,38 @@
-local Task = require("projector.task")
-local Loader = require("projector.contract.loader")
+---@class DapLoader: Loader
+local DapLoader = {}
 
----@type Loader
-local DapLoader = Loader:new()
+---@return DapLoader
+function DapLoader:new()
+  local o = {}
+  setmetatable(o, self)
+  self.__index = self
+  return o
+end
 
----@return Task[]|nil
+---@return string
+function DapLoader:name()
+  return "dap"
+end
+
+---@return task_configuration[]?
 function DapLoader:load()
   local has_dap, dap = pcall(require, "dap")
   if not has_dap then
     return
   end
 
-  ---@cast dap -Output
-  local data = dap.configurations
+  ---@type task_configuration[]
+  local configurations = {}
 
-  -- map with Task objects
-  local tasks = {}
-
-  for group, configs in pairs(data) do
-    for _, config in pairs(configs) do
-      local task_opts = { scope = "global", group = group }
-      local task = Task:new(config, task_opts)
-      table.insert(tasks, task)
+  for group, configs in pairs(dap.configurations) do
+    for _, config in ipairs(configs) do
+      config.scope = "global"
+      config.group = group
+      table.insert(configurations, config)
     end
   end
 
-  return tasks
-end
-
--- just to avoid "not_implemented" error
--- dap handles variables itself
----@param configuration task_configuration
----@return task_configuration
-function DapLoader:expand_variables(configuration)
-  return configuration
+  return configurations
 end
 
 return DapLoader

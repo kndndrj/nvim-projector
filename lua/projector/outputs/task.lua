@@ -1,14 +1,14 @@
 local utils = require("projector.utils")
 
----@class BuiltinOutput: Output
+---@class TaskOutput: Output
 ---@field private name string
 ---@field private bufnr integer
 ---@field private winid integer
 ---@field private state output_status
-local BuiltinOutput = {}
+local TaskOutput = {}
 
----@return BuiltinOutput
-function BuiltinOutput:new()
+---@return TaskOutput
+function TaskOutput:new()
   local o = {}
   setmetatable(o, self)
   self.__index = self
@@ -16,13 +16,13 @@ function BuiltinOutput:new()
 end
 
 ---@return output_status
-function BuiltinOutput:status()
+function TaskOutput:status()
   return self.state or "inactive"
 end
 
 ---@param configuration task_configuration
 ---@param callback fun(success: boolean)
-function BuiltinOutput:init(configuration, callback)
+function TaskOutput:init(configuration, callback)
   local name = configuration.name or "Builtin"
 
   local command = configuration.command
@@ -86,7 +86,7 @@ function BuiltinOutput:init(configuration, callback)
   })
 end
 
-function BuiltinOutput:show()
+function TaskOutput:show()
   if self.state == "inactive" or self.state == "" then
     utils.log("warn", "Not live!", "Builtin Output " .. self.name)
     return
@@ -103,7 +103,7 @@ function BuiltinOutput:show()
   self.state = "visible"
 end
 
-function BuiltinOutput:hide()
+function TaskOutput:hide()
   if self.state == "inactive" or self.state == "" then
     utils.log("warn", "Not live!", "Builtin Output " .. self.name)
     return
@@ -118,7 +118,7 @@ function BuiltinOutput:hide()
   self.state = "hidden"
 end
 
-function BuiltinOutput:kill()
+function TaskOutput:kill()
   if self.state == "inactive" or self.state == "" then
     return
   end
@@ -134,4 +134,4 @@ function BuiltinOutput:kill()
   self.state = "inactive"
 end
 
-return BuiltinOutput
+return TaskOutput

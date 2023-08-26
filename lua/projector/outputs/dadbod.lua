@@ -2,15 +2,11 @@ local has_dadbod_ui = vim.fn.exists(":DBUI") == 2
 
 ---@class DadbodOutput: Output
 ---@field private state output_status
----@field private first_init boolean this init is the first one
 local DadbodOutput = {}
 
 ---@return DadbodOutput
 function DadbodOutput:new()
-  local o = {
-    state = "hidden",
-    first_init = true,
-  }
+  local o = {}
   setmetatable(o, self)
   self.__index = self
   return o
@@ -18,7 +14,7 @@ end
 
 ---@return output_status
 function DadbodOutput:status()
-  return self.state or "hidden"
+  return self.state or "visible"
 end
 
 ---@param _ task_configuration
@@ -26,14 +22,7 @@ end
 function DadbodOutput:init(_, callback)
   -- due to evaluation specification in the
   -- output builder, we don't have to do anything
-  -- for the first time
-
-  if not self.first_init then
-    self:show()
-  end
-
-  self.first_init = false
-
+  self.state = "hidden"
   callback(true)
 end
 
@@ -62,8 +51,8 @@ function DadbodOutput:hide()
 
   if vim.fn.exists(":DBUIClose") == 2 then
     vim.cmd(":DBUIClose")
+    self.state = "hidden"
   end
-  self.state = "hidden"
 end
 
 function DadbodOutput:kill()

@@ -1,5 +1,5 @@
 local utils = require("projector.utils")
-local BuiltinOutput = require("projector.outputs.builtin")
+local TaskOutput = require("projector.outputs.task")
 local DadbodOutput = require("projector.outputs.dadbod")
 local DapOutput = require("projector.outputs.dap")
 
@@ -23,14 +23,14 @@ local M = {}
 ---@field preprocess fun(self: OutputBuilder, selection: configuraiton_picks):configuraiton_picks pick configs that suit the output (return only picked ones)
 
 --
--- Builder for the BuiltinOutput
+-- Builder for the TaskOutput
 --
----@class BuiltinOutputBuilder: OutputBuilder
-M.BuiltinOutputBuilder = {}
+---@class TaskOutputBuilder: OutputBuilder
+M.TaskOutputBuilder = {}
 
 -- new builder
----@return BuiltinOutputBuilder
-function M.BuiltinOutputBuilder:new()
+---@return TaskOutputBuilder
+function M.TaskOutputBuilder:new()
   local o = {}
   setmetatable(o, self)
   self.__index = self
@@ -38,19 +38,19 @@ function M.BuiltinOutputBuilder:new()
 end
 
 -- build a new output
----@return BuiltinOutput
-function M.BuiltinOutputBuilder:build()
-  return BuiltinOutput:new()
+---@return TaskOutput
+function M.TaskOutputBuilder:build()
+  return TaskOutput:new()
 end
 
 ---@return task_mode mode
-function M.BuiltinOutputBuilder:mode_name()
+function M.TaskOutputBuilder:mode_name()
   return "task"
 end
 
 ---@param selection configuraiton_picks
 ---@return configuraiton_picks # picked configs
-function M.BuiltinOutputBuilder:preprocess(selection)
+function M.TaskOutputBuilder:preprocess(selection)
   ---@type configuraiton_picks
   local picks = {}
 
@@ -114,7 +114,7 @@ function M.DadbodOutputBuilder:preprocess(selection)
   return {
     ["__dadbod_output_builder_task_id__"] = {
       name = "Database",
-      scope = "db",
+      scope = "global",
       group = "db",
       evaluate = self:mode_name(),
     },

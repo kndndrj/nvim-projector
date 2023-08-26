@@ -8,13 +8,23 @@ local Lookup = require("projector.handler.lookup")
 ---@field private dashboard Dashboard
 ---@field private lookup Lookup task lookup
 ---@field private loaders Loader[]
----@field private output_builders OutputBuilder[] provided output builders
+---@field private output_builders OutputBuilder[]
 ---@field private show boolean can outputs be shown or not
+---@field private depencency_mode? task_mode mode to be used for tasks running as dependenies
+---@field private automatic_reload boolean reload the loaders on each call
+---@field private first_load_done boolean were configs loaded for the first time?
 local Handler = {}
 
+---@alias handler_config { depencency_mode: task_mode, automatic_reload: boolean }
+
 ---@param dashboard Dashboard
+---@param loaders Loader[]
+---@param output_builders OutputBuilder[]
+---@param opts? handler_config
 ---@return Handler
-function Handler:new(dashboard)
+function Handler:new(dashboard, loaders, output_builders, opts)
+  opts = opts or {}
+
   if not dashboard then
     error("no Dashboard provided to Handler")
   end
@@ -23,18 +33,20 @@ function Handler:new(dashboard)
     dashboard = dashboard,
     tasks = {},
     lookup = Lookup:new(),
-    output_builders = {
-      require("projector.outputs").BuiltinOutputBuilder,
-      require("projector.outputs").DadbodOutputBuilder,
-      require("projector.outputs").DapOutputBuilder,
-    },
-    loaders = {},
+    output_builders = output_builders or {},
+    loaders = loaders or {},
     show = true,
+    dependency_mode = opts.depencency_mode,
+    automatic_reload = opts.automatic_reload or false,
+    first_load_done = false,
   }
   setmetatable(o, self)
   self.__index = self
   return o
 end
+
+-- internediate type used for loading configs from sources
+---@alias _records table<string, { config: task_configuration, loader: Loader, output_builders: OutputBuilder[] }>
 
 ---@param records _records
 ---@return configuraiton_picks
@@ -76,29 +88,17 @@ function Handler:preprocess(records)
 end
 
 -- Load tasks from all loaders
-function Handler:load_sources()
-  ---@type Config
-  local config = require("projector").config
-
-  ---@alias _records table<string, { config: task_configuration, loader: Loader, output_builders: OutputBuilder[] }>
-
+-- and adds them to internal lookup
+function Handler:reload_configs()
   ---@type _records
   local records = {}
 
   -- Load all tasks from different loaders
-  for _, loader_config in pairs(config.loaders) do
-    local ok, l = pcall(require, "projector.loaders." .. loader_config.module)
-    if ok then
-      ---@type Loader
-      local loader = l:new { user_opts = loader_config.options }
-
-      local configs = loader:load()
-      if configs then
-        for _, cfg in ipairs(configs) do
-          records[math.random()] = { config = cfg, loader = loader }
-        end
-
-        table.insert(self.loaders, loader)
+  for _, loader in pairs(self.loaders) do
+    local configs = loader:load()
+    if configs then
+      for _, cfg in ipairs(configs) do
+        records[math.random()] = { config = cfg, loader = loader }
       end
     end
   end
@@ -118,10 +118,10 @@ function Handler:load_sources()
   for _, rec in pairs(records) do
     local task
     task = Task:new(rec.config, rec.output_builders, {
-      dependency_mode = "task", -- TODO: get "task" from config
+      dependency_mode = self.depencency_mode,
       expand_config = function(c)
-        if rec.loader and type(rec.loader.expand_variables) == "function" then
-          return rec.loader:expand_variables(c)
+        if rec.loader and type(rec.loader.expand) == "function" then
+          return rec.loader:expand(c)
         end
         return c
       end,
@@ -152,22 +152,16 @@ function Handler:load_sources()
   self.lookup:replace_tasks(tasks)
 end
 
----@param filter? { live: boolean, visible: boolean }
----@return Task[] tasks
-function Handler:get_tasks(filter)
-  return self.lookup:get_all(filter)
-end
-
----@return Task tasks
-function Handler:selected_task()
-  return self.lookup:get_selected()
-end
-
 -- entrypoint to task selection
 function Handler:continue()
   -- evaluate any task overrides
   if self:evaluate_live_task_action_overrides() then
     return
+  end
+
+  if self.automatic_reload or not self.first_load_done then
+    self:reload_configs()
+    self.first_load_done = true
   end
 
   -- show dashboard
