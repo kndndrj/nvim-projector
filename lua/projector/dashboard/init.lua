@@ -15,12 +15,14 @@ local NuiLine = require("nui.line")
 ---@class Node
 ---@field id string
 ---@field name string
----@field type "task_visible"|"task_inactive"|"task_hidden"|"action"|"loader"|"mode"|""
+---@field type "task_visible"|"task_inactive"|"task_hidden"|"action"|"loader"|"mode"|"group"|""
 ---@field comment? string
 -- action functions:
 ---@field action_1? fun()
 ---@field action_2? fun()
 ---@field action_3? fun()
+-- other:
+---@field is_empty boolean
 
 ---@class Dashboard
 ---@field private left_tree table NuiTree
@@ -41,7 +43,7 @@ function Dashboard:new(opts)
   end
 
   local o = {
-    popup = Popup:new(opts.popup),
+    popup = Popup:new("Tasks:", "Active:", opts.popup),
     mappings = opts.mappings or {},
     candies = candies,
   }
@@ -78,10 +80,19 @@ function Dashboard:create_tree(bufnr, nodes)
       -- name
       line:append(node.name, candy.text_highlight)
 
+      -- special icon if node can expand
+      if node:has_children() and not node:is_expanded() then
+        candy = self.candies["can_expand"] or {}
+        if not candy.icon or candy.icon == "" then
+          candy.icon = "o"
+        end
+        line:append(" " .. candy.icon, candy.icon_highlight)
+      end
+
       -- comment
       if node.comment then
-        candy = self.candies["comment"]
-        line:append("  (" .. node.comment .. ")", candy.text_highlight)
+        candy = self.candies["comment"] or {}
+        line:append("  " .. node.comment, candy.text_highlight)
       end
 
       return line
@@ -170,10 +181,53 @@ function Dashboard:map_keys(tree, bufnr)
   end, { silent = true, buffer = bufnr })
 end
 
+---@private
+---@param tree table NuiTree
+---@param bufnr integer
+function Dashboard:configure_autocmds(tree, bufnr)
+  local previous_row = 0
+
+  local function move_cursor()
+    local node = tree:get_node()
+    if not node or not node.is_empty then
+      return
+    end
+
+    local row, col = unpack(vim.api.nvim_win_get_cursor(0))
+
+    if row > previous_row then
+      -- moving down
+      row = row + 1
+    elseif row < previous_row then
+      -- moving up
+      row = row - 1
+    end
+
+    if row < 1 or row > vim.fn.line("$") then
+      row = 1
+    end
+
+    vim.api.nvim_win_set_cursor(0, { row, col })
+
+    move_cursor()
+
+    previous_row = vim.api.nvim_win_get_cursor(0)[1]
+  end
+
+  -- Cursor skips empty nodes
+  vim.api.nvim_create_autocmd({ "CursorMoved" }, {
+    buffer = bufnr,
+    callback = function()
+      pcall(move_cursor)
+    end,
+  })
+end
+
 -- Show dashboard on screen
 ---@param tasks Task[] list of tasks to display
 ---@param loaders Loader[] list of loaders to display
-function Dashboard:open(tasks, loaders)
+---@param reload_handle fun() function that reloads the sources when called
+function Dashboard:open(tasks, loaders, reload_handle)
   -- open popup
   local left_bufnr, right_bufnr = self.popup:open()
 
@@ -185,7 +239,7 @@ function Dashboard:open(tasks, loaders)
   if #tasks < 1 then
     inactive_task_nodes = convert.help_no_task_nodes()
   end
-  local loader_nodes = convert.loader_nodes(loaders)
+  local loader_nodes = convert.loader_nodes(loaders, reload_handle)
   if #loaders < 1 then
     loader_nodes = convert.help_no_loader_nodes()
   end
@@ -200,20 +254,17 @@ function Dashboard:open(tasks, loaders)
   self.left_tree =
     self:create_tree(left_bufnr, utils.merge_lists(inactive_task_nodes, convert.separator_nodes(n_sep), loader_nodes))
   self:map_keys(self.left_tree, left_bufnr)
+  self:configure_autocmds(self.left_tree, left_bufnr)
 
   --
   -- right panel
   --
-  local active_nodes = convert.active_task_nodes(tasks)
-  self.right_tree = self:create_tree(right_bufnr, active_nodes)
+  self.right_tree = self:create_tree(right_bufnr, convert.active_task_nodes(tasks))
   self:map_keys(self.right_tree, right_bufnr)
+  self:configure_autocmds(self.right_tree, right_bufnr)
 
-  -- set focus depending on the task state
-  if #active_nodes > 0 then
-    self.popup:set_focus("right")
-  else
-    self.popup:set_focus("left")
-  end
+  -- set focus to left
+  self.popup:set_focus("left")
 
   -- render trees
   self.left_tree:render()

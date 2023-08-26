@@ -58,46 +58,56 @@ M.default = {
     candies = {
       -- these represent node types
       task_visible = {
-        icon = "",
-        icon_highlight = "String",
-        text_highlight = "String",
-      },
-      task_inactive = {
-        icon = "󰏫",
-        icon_highlight = "Directory",
-        text_highlight = "Directory",
+        icon = "",
+        icon_highlight = "Character",
+        text_highlight = "Character",
       },
       task_hidden = {
-        icon = "󰆴",
-        icon_highlight = "SpellBad",
-        text_highlight = "SpellBad",
+        icon = "",
+        icon_highlight = "Character",
+        text_highlight = "",
+      },
+      task_inactive = {
+        icon = "",
+        icon_highlight = "Title",
+        text_highlight = "",
       },
       action = {
-        icon = "󰋖",
-        icon_highlight = "Title",
-        text_highlight = "Title",
+        icon = "󰣪",
+        icon_highlight = "Character",
+        text_highlight = "",
       },
       loader = {
         icon = "󰃖",
-        icon_highlight = "MoreMsg",
-        text_highlight = "MoreMsg",
+        icon_highlight = "Title",
+        text_highlight = "",
       },
       mode = {
-        icon = "󰋖",
+        icon = "",
         icon_highlight = "Title",
-        text_highlight = "Title",
+        text_highlight = "",
+      },
+      group = {
+        icon = "",
+        icon_highlight = "",
+        text_highlight = "",
       },
 
       -- these are special
       comment = {
-        icon = "󰃖",
-        icon_highlight = "",
-        text_highlight = "MoreMsg",
+        icon = "",
+        icon_highlight = "NonText",
+        text_highlight = "NonText",
       },
       none = {
         icon = "",
         icon_highlight = "",
-        text_highlight = "MoreMsg",
+        text_highlight = "",
+      },
+      can_expand = {
+        icon = "o",
+        icon_highlight = "String",
+        text_highlight = "String",
       },
     },
     popup = {

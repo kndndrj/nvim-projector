@@ -1,20 +1,26 @@
 ---@class Popup
----@field private left { winid: integer, bufnr:integer }
----@field private right { winid: integer, bufnr:integer }
+---@field private left { winid: integer, bufnr:integer, title: string }
+---@field private right { winid: integer, bufnr:integer, title: string }
 ---@field private width integer
 ---@field private height integer
 local Popup = {}
 
 ---@alias popup_config { width: integer, height: integer }
 
+---@param left_title? string
+---@param right_title? string
 ---@param opts? popup_config
 ---@return Popup
-function Popup:new(opts)
+function Popup:new(left_title, right_title, opts)
   opts = opts or {}
 
   local o = {
-    left = {},
-    right = {},
+    left = {
+      title = left_title or "",
+    },
+    right = {
+      title = right_title or "",
+    },
     width = opts.width or 100,
     height = opts.height or 20,
   }
@@ -47,6 +53,7 @@ function Popup:open()
     row = y,
     border = "rounded",
     style = "minimal",
+    title_pos = "center",
   }
 
   self.left.winid = vim.api.nvim_open_win(
@@ -55,8 +62,7 @@ function Popup:open()
     vim.tbl_extend("force", window_opts, {
       col = middle - width - 1,
       border = { "╭", "─", "┬", "│", "┴", "─", "╰", "│" },
-      title_pos = "left",
-      title = "Projector",
+      title = self.left.title,
     })
   )
   self.right.winid = vim.api.nvim_open_win(
@@ -65,6 +71,7 @@ function Popup:open()
     vim.tbl_extend("force", window_opts, {
       col = middle,
       border = { "┬", "─", "╮", "│", "╯", "─", "┴", "│" },
+      title = self.right.title,
     })
   )
 

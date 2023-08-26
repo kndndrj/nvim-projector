@@ -87,4 +87,9 @@ function BuiltinLoader:expand(configuration)
   return vim.tbl_map(common.expand_config_variables, configuration)
 end
 
+---@return string
+function BuiltinLoader:file()
+  return self.get_path()
+end
+
 return BuiltinLoader

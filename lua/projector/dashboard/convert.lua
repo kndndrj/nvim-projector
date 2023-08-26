@@ -3,6 +3,7 @@
 
 local NuiTree = require("nui.tree")
 local utils = require("projector.utils")
+local editor = require("projector.dashboard.editor")
 
 local M = {}
 
@@ -60,7 +61,7 @@ function M.active_task_nodes(tasks)
         id = meta.id,
         name = meta.name,
         type = type,
-        comment = current_mode,
+        comment = meta.group .. " - " .. current_mode,
         -- show
         action_1 = function()
           task:show()
@@ -103,8 +104,8 @@ function M.inactive_task_nodes(tasks)
 
   for _, task in ipairs(tasks) do
     if not task:is_live() then
+      local meta = task:metadata()
       -- handle modes
-      local comment
       local modes, _ = task:modes()
       local action
       local children = {}
@@ -112,13 +113,12 @@ function M.inactive_task_nodes(tasks)
         action = function()
           task:run { mode = modes[1] }
         end
-        comment = modes[1]
       elseif #modes > 1 then
         for _, mode in ipairs(modes) do
           table.insert(
             children,
             NuiTree.Node {
-              id = task:metadata().id .. mode,
+              id = meta.id .. mode,
               name = mode,
               type = "mode",
               action_1 = function()
@@ -130,9 +130,9 @@ function M.inactive_task_nodes(tasks)
       end
 
       local node = NuiTree.Node({
-        id = task:metadata().id,
-        name = task:metadata().name,
-        comment = comment,
+        id = meta.id,
+        name = meta.name,
+        comment = meta.group .. " - " .. table.concat(modes, "|"),
         type = "task_inactive",
         action_1 = action,
       }, children)
@@ -160,53 +160,57 @@ function M.inactive_task_nodes(tasks)
 
   local hidden_fold_node = NuiTree.Node({
     id = "__menuhidden_nodes_ui__",
-    name = "hidden tasks",
-    type = "",
+    name = "hidden",
+    type = "group",
   }, menuhidden_nodes)
 
   return utils.merge_lists(normal_nodes, M.separator_nodes(1), { hidden_fold_node })
 end
 
--- get blank separator nodes
----@param count? integer default is 1
----@return Node[]
-function M.separator_nodes(count)
-  if not count or count < 1 then
-    count = 1
-  end
-
-  local nodes = {}
-  for i = 1, count do
-    local node = NuiTree.Node {
-      id = "__separator_node_" .. i .. tostring(math.random()),
-      name = "",
-      type = "",
-    }
-    table.insert(nodes, node)
-  end
-
-  return nodes
-end
-
 -- retrieve loader nodes
 ---@param loaders Loader[] list of loaders
+---@param reload_handle fun() function that reloads the sources when called
 ---@return Node[]
-function M.loader_nodes(loaders)
+function M.loader_nodes(loaders, reload_handle)
   local nodes = {}
 
   for _, loader in ipairs(loaders) do
+    local node_action
+    local comment
+    if type(loader.file) == "function" and vim.loop.fs_stat(loader:file()) then
+      node_action = function()
+        editor.open(loader:file(), {
+          title = "Edit source of " .. loader:name(),
+          callback = reload_handle,
+        })
+      end
+      comment = "edit"
+    end
+
     table.insert(
       nodes,
       NuiTree.Node {
         id = tostring(math.random()),
-        name = "asdf",
+        name = loader:name(),
         type = "loader",
-        action_1 = function() end,
+        action_1 = node_action,
+        comment = comment,
       }
     )
   end
 
-  return nodes
+  if #nodes < 1 then
+    return {}
+  end
+
+  local master_node = NuiTree.Node({
+    id = tostring(math.random()),
+    name = "loaders",
+    type = "group",
+    action_2 = reload_handle,
+  }, nodes)
+
+  return { master_node }
 end
 
 -- retrieve loader nodes
@@ -249,6 +253,28 @@ function M.help_no_loader_nodes()
       end,
     },
   }
+end
+
+-- get blank separator nodes
+---@param count? integer default is 1
+---@return Node[]
+function M.separator_nodes(count)
+  if not count or count < 1 then
+    count = 1
+  end
+
+  local nodes = {}
+  for i = 1, count do
+    local node = NuiTree.Node {
+      id = "__separator_node_" .. i .. tostring(math.random()),
+      name = "",
+      type = "",
+      is_empty = true,
+    }
+    table.insert(nodes, node)
+  end
+
+  return nodes
 end
 
 return M

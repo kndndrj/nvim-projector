@@ -165,7 +165,9 @@ function Handler:continue()
   end
 
   -- show dashboard
-  self.dashboard:open(self.lookup:get_all(), self.loaders)
+  self.dashboard:open(self.lookup:get_all(), self.loaders, function()
+    self:reload_configs()
+  end)
 end
 
 -- checks all live tasks for actions and triggers overrides if there are any
