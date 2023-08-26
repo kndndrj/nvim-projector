@@ -1,46 +1,66 @@
-local Output = require("projector.contract.output")
 local has_dap, dap = pcall(require, "dap")
 local has_dapui, dapui = pcall(require, "dapui")
----@cast dap -Loader
 
----@type Output
-local DapOutput = Output:new()
+---@class DapOutput: Output
+---@field state output_status
+---@field session table -- Dap Session
+local DapOutput = {}
+
+---@return DapOutput
+function DapOutput:new()
+  local o = {}
+  setmetatable(o, self)
+  self.__index = self
+  return o
+end
+
+---@return output_status
+function DapOutput:status()
+  return self.state or "inactive"
+end
 
 ---@param configuration task_configuration
----@diagnostic disable-next-line: unused-local
-function DapOutput:init(configuration)
-  if has_dap then
-    self.status = "visible"
+---@param callback fun(success: boolean)
+function DapOutput:init(configuration, callback)
+  if not has_dap then
+    return
+  end
 
-    -- set status if by any chance the above setting failed
-    dap.listeners.before.event_initialized["projector"] = function()
-      self.status = "visible"
-    end
-    -- set status to inactive and hide outputs on exit
-    dap.listeners.before.event_terminated["projector"] = function()
-      self.status = "inactive"
-      self:done(true)
-    end
-    dap.listeners.before.event_exited["projector"] = function()
-      self.status = "inactive"
-    end
+  self.state = "hidden"
 
-    dap.run(configuration)
+  -- run the config
+  dap.run(configuration)
+
+  -- get dap session
+  self.session = dap.session()
+  if not self.session then
+    callback(false)
+    return
+  end
+
+  self.session.on_close["projector"] = function()
+    self.state = "inactive"
+    if has_dapui then
+      dapui.close()
+    end
+    callback(true)
   end
 end
 
 function DapOutput:show()
-  if has_dapui then
-    dapui.open()
-    self.status = "visible"
+  if not has_dapui then
+    return
   end
+  dapui.open()
+  self.state = "visible"
 end
 
 function DapOutput:hide()
-  if has_dapui then
-    dapui.close()
-    self.status = "hidden"
+  if not has_dapui then
+    return
   end
+  dapui.close()
+  self.state = "hidden"
 end
 
 function DapOutput:kill()
@@ -50,26 +70,22 @@ function DapOutput:kill()
   if has_dapui then
     dapui.close()
   end
-  self.status = "inactive"
+  self.state = "inactive"
 end
 
----@return task_action[]|nil
-function DapOutput:list_actions()
-  if not has_dap then
-    return
+---@return task_action[]
+function DapOutput:actions()
+  if not has_dap or not self.session then
+    return {}
   end
 
-  local session = dap.session()
-  if not session then
-    return
-  end
-
-  if session.stopped_thread_id then
+  -- override action if thread stopped
+  if self.session.stopped_thread_id then
     return {
       {
         label = "Continue",
         action = function()
-          session:_step("continue")
+          self.session:_step("continue")
         end,
         override = true,
       },
@@ -107,7 +123,7 @@ function DapOutput:list_actions()
   -- Add stopped threads nested actions
   local stopped_threads = vim.tbl_filter(function(t)
     return t.stopped
-  end, session.threads)
+  end, self.session.threads)
 
   if next(stopped_threads) then
     ---@type task_action[]
@@ -117,8 +133,8 @@ function DapOutput:list_actions()
       table.insert(stopped_thread_actions, {
         label = t.name or t.id,
         action = function()
-          session.stopped_thread_id = t.id
-          session:_step("continue")
+          self.session.stopped_thread_id = t.id
+          self.session:_step("continue")
         end,
       })
     end

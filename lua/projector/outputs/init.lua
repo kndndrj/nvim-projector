@@ -1,6 +1,7 @@
 local utils = require("projector.utils")
 local BuiltinOutput = require("projector.outputs.builtin")
 local DadbodOutput = require("projector.outputs.dadbod")
+local DapOutput = require("projector.outputs.dap")
 
 local M = {}
 
@@ -8,7 +9,7 @@ local M = {}
 
 ---@class Output
 ---@field status fun(self: Output):output_status function to return the output's status
----@field init fun(self: Output, configuration: task_configuration, callback: fun(success: boolean)) function to initialize the output
+---@field init fun(self: Output, configuration: task_configuration, callback: fun(success: boolean)) function to initialize the output (runs, but doesn't show anythin on screen)
 ---@field kill fun(self: Output) function to kill the output execution
 ---@field show fun(self: Output) function to show the ouput on screen
 ---@field hide fun(self: Output) function to hide the output off the screen
@@ -118,6 +119,47 @@ function M.DadbodOutputBuilder:preprocess(selection)
       evaluate = self:mode_name(),
     },
   }
+end
+
+--
+-- Builder for the DapOutput
+--
+---@class DapOutputBuilder: OutputBuilder
+M.DapOutputBuilder = {}
+
+-- new builder
+---@return DapOutputBuilder
+function M.DapOutputBuilder:new()
+  local o = {}
+  setmetatable(o, self)
+  self.__index = self
+  return o
+end
+
+-- build a new output
+---@return DapOutput
+function M.DapOutputBuilder:build()
+  return DapOutput:new()
+end
+
+---@return task_mode mode
+function M.DapOutputBuilder:mode_name()
+  return "debug"
+end
+
+---@param selection configuraiton_picks
+---@return configuraiton_picks # picked configs
+function M.DapOutputBuilder:preprocess(selection)
+  ---@type configuraiton_picks
+  local picks = {}
+
+  for id, config in pairs(selection) do
+    if utils.has_fields(config, { "type", "request" }) then
+      picks[id] = config
+    end
+  end
+
+  return picks
 end
 
 return M

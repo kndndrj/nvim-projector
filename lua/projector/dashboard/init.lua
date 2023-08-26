@@ -112,8 +112,8 @@ function Dashboard:map_keys(tree, bufnr)
       return
     end
     if type(node.action_1) == "function" then
-      node.action_1()
       self.popup:close()
+      node.action_1()
       return
     end
 
@@ -132,8 +132,8 @@ function Dashboard:map_keys(tree, bufnr)
       return
     end
     if type(node.action_2) == "function" then
-      node.action_2()
       self.popup:close()
+      node.action_2()
     end
   end, { silent = true, buffer = bufnr })
 
@@ -145,8 +145,8 @@ function Dashboard:map_keys(tree, bufnr)
       return
     end
     if type(node.action_3) == "function" then
-      node.action_3()
       self.popup:close()
+      node.action_3()
     end
   end, { silent = true, buffer = bufnr })
 

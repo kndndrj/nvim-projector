@@ -22,14 +22,19 @@ function M.active_task_nodes(tasks)
     for _, action in ipairs(actions) do
       local id = parent_id .. action.label
 
+      local node_action
+      if type(action.action) == "function" then
+        node_action = function()
+          action.action()
+        end
+      end
+
       -- create action node
       local node = NuiTree.Node({
         id = id,
         name = action.label,
         type = "action",
-        action_1 = function()
-          action.action()
-        end,
+        action_1 = node_action,
       }, parse_actions(action.nested, id))
 
       -- expand by default (show nested actions)

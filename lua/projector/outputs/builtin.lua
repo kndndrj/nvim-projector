@@ -51,25 +51,26 @@ function BuiltinOutput:init(configuration, callback)
     end
   end
 
-  -- open the terminal in a new buffer
+  -- create new window and open a terminal job inside
   vim.api.nvim_command("bo 15new")
   vim.fn.termopen(command, term_options)
 
-  local bufnr = vim.fn.bufnr()
-  self.bufnr = bufnr
-  local winid = vim.fn.win_getid()
-  self.winid = winid
-
-  self.state = "visible"
+  local winid = vim.api.nvim_get_current_win()
+  self.bufnr = vim.api.nvim_get_current_buf()
 
   -- Rename and hide the buffer
-  vim.api.nvim_command("file " .. name .. " " .. bufnr)
+  vim.api.nvim_command("file " .. name .. " " .. self.bufnr)
   vim.o.buflisted = false
+
+  -- close the window
+  vim.api.nvim_win_close(winid, true)
+
+  self.state = "hidden"
 
   -- Autocommands
   -- Deactivate the output if we delete the buffer
   vim.api.nvim_create_autocmd({ "BufDelete", "BufUnload" }, {
-    buffer = bufnr,
+    buffer = self.bufnr,
     callback = function()
       self.bufnr = nil
       self.state = "inactive"
@@ -77,7 +78,7 @@ function BuiltinOutput:init(configuration, callback)
   })
   -- If we close the window, the output is hidden
   vim.api.nvim_create_autocmd({ "WinClosed" }, {
-    buffer = bufnr,
+    buffer = self.bufnr,
     callback = function()
       self.winid = nil
       self.state = "hidden"

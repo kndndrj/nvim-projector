@@ -56,12 +56,13 @@ local utils = require("projector.utils")
 ---@field private output_builders table<task_mode, OutputBuilder> task builders per mode
 ---@field private output Output currently active output
 ---@field private expand_config_variables fun(configuration: task_configuration):task_configuration Function that gets assigned to a task by a loader
----@field private activator fun() callback function that sets this task as the active one
+---@field private on_run fun(as_dependency: boolean):boolean hook to trigger before running the task. as_dependency is true if the task is ran as a dependency. returns true if the task can show it's output
+---@field private on_show fun() hook to trigger before showing task's output on screen
 local Task = {}
 
 ---@param configuration task_configuration
 ---@param output_builders OutputBuilder[] map of available output builders
----@param opts? { dependency_mode: task_mode, activator: fun(), expand_config: fun(config: task_configuration):task_configuration }
+---@param opts? { dependency_mode: task_mode, on_run: fun(as_dependency: boolean):(boolean), on_show: fun(), expand_config: fun(config: task_configuration):task_configuration }
 ---@return Task?
 function Task:new(configuration, output_builders, opts)
   if not configuration then
@@ -95,7 +96,10 @@ function Task:new(configuration, output_builders, opts)
     expand_config_variables = opts.expand_config or function(c)
       return c
     end,
-    activator = opts.activator or function() end,
+    on_run = opts.on_run or function(_)
+      return true
+    end,
+    on_show = opts.on_show or function() end,
   }
   setmetatable(o, self)
   self.__index = self
@@ -146,13 +150,14 @@ function Task:update_config(configuration)
 end
 
 -- Run a task and hadle it's dependencies
----@param opts? { mode: task_mode, callback: fun(success: boolean), restart: boolean }
+---@param opts? { mode: task_mode, callback: fun(success: boolean), restart: boolean, as_dependency: boolean }
 function Task:run(opts)
-  -- set task as active
-  self.activator()
-
-  -- setup options
   opts = opts or {}
+
+  -- hook
+  local can_show = self.on_run(opts.as_dependency or false)
+
+  -- options
   local mode = opts.mode or self.last_mode or self.modes_list[1]
   self.last_mode = mode
   local callback = opts.callback or function(_) end
@@ -160,7 +165,9 @@ function Task:run(opts)
 
   -- If any output is already live, return
   if self:is_live() and not restart then
-    self:show()
+    if can_show then
+      self:show()
+    end
     callback(true)
     return
   end
@@ -183,7 +190,7 @@ function Task:run(opts)
       local cb = function(ok)
         if ok then
           dep.status = "done"
-          self:run(opts)
+          self:run { mode = opts.mode, callback = opts.callback, restart = opts.restart, as_dependency = true }
           return
         end
 
@@ -195,7 +202,7 @@ function Task:run(opts)
       end
 
       -- Run the dependency (restart it if already running)
-      dep.task:run { mode = self.dependency_mode, callback = cb, restart = true }
+      dep.task:run { mode = self.dependency_mode, callback = cb, restart = true, as_dependency = true }
       return
     end
   end
@@ -206,7 +213,7 @@ function Task:run(opts)
   local cb = function(ok)
     if ok then
       if self.after then
-        self.after:run { mode = self.dependency_mode }
+        self.after:run { mode = self.dependency_mode, restart = true, as_dependency = true }
       end
     end
     callback(ok)
@@ -216,8 +223,12 @@ function Task:run(opts)
   if mode ~= self.last_mode or not self.output then
     self.output = self.output_builders[mode]:build()
   end
-  print("he")
   self.output:init(self.expand_config_variables(self.configuration), cb)
+
+  -- show the output
+  if can_show then
+    self:show()
+  end
 end
 
 ---@return task_meta
@@ -267,8 +278,7 @@ function Task:is_visible()
 end
 
 function Task:show()
-  -- set task as active
-  self.activator()
+  self.on_show()
 
   local o = self.output
   if o and o:status() == "hidden" then

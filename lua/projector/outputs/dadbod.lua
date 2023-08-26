@@ -60,7 +60,9 @@ function DadbodOutput:hide()
     return
   end
 
-  vim.cmd(":DBUIClose")
+  if vim.fn.exists(":DBUIClose") == 2 then
+    vim.cmd(":DBUIClose")
+  end
   self.state = "hidden"
 end
 

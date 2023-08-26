@@ -9,6 +9,7 @@ local Lookup = require("projector.handler.lookup")
 ---@field private lookup Lookup task lookup
 ---@field private loaders Loader[]
 ---@field private output_builders OutputBuilder[] provided output builders
+---@field private show boolean can outputs be shown or not
 local Handler = {}
 
 ---@param dashboard Dashboard
@@ -25,8 +26,10 @@ function Handler:new(dashboard)
     output_builders = {
       require("projector.outputs").BuiltinOutputBuilder,
       require("projector.outputs").DadbodOutputBuilder,
+      require("projector.outputs").DapOutputBuilder,
     },
     loaders = {},
+    show = true,
   }
   setmetatable(o, self)
   self.__index = self
@@ -103,6 +106,12 @@ function Handler:load_sources()
   -- filter records using outputs
   records = self:preprocess(records)
 
+  local hide_all = function()
+    for _, t in pairs(self.lookup:get_all { visible = true }) do
+      t:hide()
+    end
+  end
+
   -- create tasks from records
   ---@type Task[]
   local tasks = {}
@@ -113,15 +122,23 @@ function Handler:load_sources()
       expand_config = function(c)
         if rec.loader and type(rec.loader.expand_variables) == "function" then
           return rec.loader:expand_variables(c)
-        else
-          return c
         end
+        return c
       end,
-      activator = function()
-        -- close all other task outputs
-        for _, t in pairs(self.lookup:get_all { visible = true }) do
-          t:hide()
+      on_run = function(as_dependency)
+        if not as_dependency then
+          self.show = true
         end
+        if self.show then
+          hide_all()
+        end
+        -- set this task as active
+        self.lookup:set_selected(task:metadata().id)
+        return self.show
+      end,
+      on_show = function()
+        self.show = true
+        hide_all()
         -- set this task as active
         self.lookup:set_selected(task:metadata().id)
       end,
@@ -217,8 +234,10 @@ function Handler:toggle_output()
   local task = self.lookup:get_selected(true)
 
   if task:is_visible() then
+    self.show = false
     task:hide()
   else
+    self.show = true
     task:show()
   end
 end
