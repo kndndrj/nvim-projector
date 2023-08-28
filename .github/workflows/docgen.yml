@@ -1,41 +1,44 @@
 name: Documentation Generation
 
-on: [push, pull_request]
+on:
+  push:
+    tags-ignore:
+      # ignore all tags
+      - '**'
+    branches:
+      # run for all branches
+      - '**'
 
 jobs:
-  check-markdown-format:
-    runs-on: ubuntu-20.04
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-      - name: Python Setup
-        uses: actions/setup-python@v3
-        with:
-          python-version: '3.8'
-      - name: Install mdformat
-        run: |
-          pip install mdformat-gfm
-      - name: Markdown Style Check
-        run: |
-          mdformat --number --wrap 80 --check README.md EXTENSIONS.md
-
   generate-docs:
-    runs-on: ubuntu-20.04
-    needs: check-markdown-format
+    runs-on: ubuntu-22.04
+    name: Generate Documentation
+    env:
+      TEMP_README: "__temp_readme.md"
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-      - name: Install md2vim
+      - uses: actions/checkout@v3
+      - name: Prepare markdown file
         run: |
-          curl -L -o md2vim.tar.gz https://github.com/FooSoft/md2vim/releases/download/21.12.14.0/md2vim_linux_amd64.tar.gz
-          tar -xzvf md2vim.tar.gz
-      - name: Generate Vim Help from Markdown
-        run: |
-          ./md2vim -desc "Basic, yet extensible code-runner/project-configurator" <(sed '0,/docgen-start/d' README.md; sed '0,/docgen-start/d' EXTENSIONS.md) doc/projector.txt
+          {
+            sed '/DOCGEN_IGNORE_START/,/DOCGEN_IGNORE_END/d' README.md
+            cat EXTENSIONS.md
+          } > "$TEMP_README"
+      - name: Generate vimdoc
+        uses: kdheepak/panvimdoc@v3.0.6
+        with:
+          vimdoc: projector
+          pandoc: "${{ env.TEMP_README }}"
+          toc: true
+          description: "Extensible code-runner/project-configurator"
+          treesitter: true
+          ignorerawblocks: true
+          docmappingprojectname: false
       - name: Commit the Generated Help
         uses: EndBug/add-and-commit@v9
+        if: github.event_name == 'push'
         with:
           add: doc/projector.txt
           author_name: Github Actions
-          author_email: actions@github
+          author_email: actions@github.com
           message: "[docgen] Update doc/projector.txt"
+          pull: --rebase --autostash

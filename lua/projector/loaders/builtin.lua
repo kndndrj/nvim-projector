@@ -49,7 +49,7 @@ end
 ---@return string
 function BuiltinLoader:name()
   local name = vim.fs.basename(self.get_path())
-  if not name or name == "" then
+  if not name or name == "" or not vim.loop.fs_stat(self.get_path()) then
     return "builtin"
   end
   return name
