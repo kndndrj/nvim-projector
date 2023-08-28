@@ -48,7 +48,11 @@ end
 
 ---@return string
 function BuiltinLoader:name()
-  return "builtin"
+  local name = vim.fs.basename(self.get_path())
+  if not name or name == "" then
+    return "builtin"
+  end
+  return name
 end
 
 ---@return task_configuration[]?

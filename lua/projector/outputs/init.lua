@@ -1,4 +1,3 @@
-local utils = require("projector.utils")
 local TaskOutput = require("projector.outputs.task")
 local DadbodOutput = require("projector.outputs.dadbod")
 local DapOutput = require("projector.outputs.dap")
@@ -55,7 +54,7 @@ function M.TaskOutputBuilder:preprocess(selection)
   local picks = {}
 
   for id, config in pairs(selection) do
-    if utils.has_fields(config, { "command" }) then
+    if config.command then
       picks[id] = config
     end
   end
@@ -113,9 +112,9 @@ function M.DadbodOutputBuilder:preprocess(selection)
   ---@type configuraiton_picks
   return {
     ["__dadbod_output_builder_task_id__"] = {
-      name = "Database",
       scope = "global",
       group = "db",
+      name = "Dadbod",
       evaluate = self:mode_name(),
     },
   }
@@ -154,7 +153,7 @@ function M.DapOutputBuilder:preprocess(selection)
   local picks = {}
 
   for id, config in pairs(selection) do
-    if utils.has_fields(config, { "type", "request" }) then
+    if config.type and config.request then
       picks[id] = config
     end
   end
