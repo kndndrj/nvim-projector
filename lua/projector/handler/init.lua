@@ -49,9 +49,9 @@ end
 ---@alias _records table<string, { config: task_configuration, loader: Loader, output_builders: OutputBuilder[] }>
 
 ---@param records _records
----@return configuraiton_picks
+---@return table<string, task_configuration>
 local function to_picks(records)
-  ---@type configuraiton_picks
+  ---@type table<string, task_configuration>
   local picks = {}
 
   for id, rec in pairs(records) do

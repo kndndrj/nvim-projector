@@ -8,6 +8,7 @@
 
 local M = {}
 
+-- DOCGEN_START
 local task_output_builder = require("projector.outputs").TaskOutputBuilder:new()
 
 ---@type Config
@@ -116,5 +117,6 @@ M.default = {
     },
   },
 }
+-- DOCGEN_END
 
 return M

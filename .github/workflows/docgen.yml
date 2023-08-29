@@ -17,11 +17,24 @@ jobs:
       TEMP_README: "__temp_readme.md"
     steps:
       - uses: actions/checkout@v3
+      - uses: actions/checkout@v3
       - name: Prepare markdown file
         run: |
+          TEMP_CONFIG="$(mktemp)"
+          # Retrieve default config and put it in a temp file.
           {
-            sed '/DOCGEN_IGNORE_START/,/DOCGEN_IGNORE_END/d' README.md
-            cat EXTENSIONS.md
+            echo '```lua'
+            awk '/DOCGEN_END/{f=0} f; /DOCGEN_START/{f=1}' lua/projector/config.lua
+            echo '```'
+          } > "$TEMP_CONFIG"
+          # Insert the default config between DOCGEN_CONFIG tags in the README.
+          # And remove stuff between DOCGEN_IGNORE_START and DOCGEN_IGNORE_END tags from README.
+          {
+            sed -e '
+              /DOCGEN_CONFIG_START/,/DOCGEN_CONFIG_END/!b
+              /DOCGEN_CONFIG_START/r '"$TEMP_CONFIG"'
+              /DOCGEN_CONFIG_END:/!d
+            ' <(sed '/DOCGEN_IGNORE_START/,/DOCGEN_IGNORE_END/d' README.md)
           } > "$TEMP_README"
       - name: Generate vimdoc
         uses: kdheepak/panvimdoc@v3.0.6

@@ -7,7 +7,6 @@ local utils = require("projector.utils")
 
 -- Table of configuration parameters
 ---@class task_configuration
---- common:
 ---@field name string
 ---@field scope string
 ---@field group string
@@ -15,22 +14,6 @@ local utils = require("projector.utils")
 ---@field dependencies task_id[]
 ---@field after task_id
 ---@field evaluate task_mode -- evaluate the specified output immediately if any mode matches the specified one
----
----@field env table<string, string>
----@field cwd string
----@field args string[]
----@field pattern string
---- task
----@field command string
---- debug
----@field type string
----@field request string
----@field program string
----@field port string|integer
---- + extra dap-specific parameters (see: https://github.com/mfussenegger/nvim-dap)
---- database
----@field databases { name: string, url: string }[]
----@field queries { [string]: {[string]: string } }
 
 -- Table of actions
 ---@alias task_action { label: string, action: fun( ), override?: boolean, nested?: task_action[] }

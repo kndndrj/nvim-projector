@@ -14,12 +14,10 @@ local M = {}
 ---@field hide fun(self: Output) function to hide the output off the screen
 ---@field actions? fun(self: Output):task_action[] function to list any available actions of the output
 
----@alias configuraiton_picks table<string, task_configuration> map of task_id: task_configuration for picking tasks that suit the outputs
-
 ---@class OutputBuilder
 ---@field mode_name fun(self: OutputBuilder):task_mode function to return the name of the output mode (used as a display mode name)
 ---@field build fun(self: OutputBuilder):Output function to build the actual output
----@field preprocess fun(self: OutputBuilder, selection: configuraiton_picks):configuraiton_picks pick configs that suit the output (return only picked ones)
+---@field preprocess fun(self: OutputBuilder, selection: table<string, task_configuration>):table<string, task_configuration> pick configs that suit the output (return only picked ones)
 
 --
 -- Builder for the TaskOutput
@@ -47,10 +45,10 @@ function M.TaskOutputBuilder:mode_name()
   return "task"
 end
 
----@param selection configuraiton_picks
----@return configuraiton_picks # picked configs
+---@param selection table<string, task_configuration>
+---@return table<string, task_configuration> # picked configs
 function M.TaskOutputBuilder:preprocess(selection)
-  ---@type configuraiton_picks
+  ---@type table<string, task_configuration>
   local picks = {}
 
   for id, config in pairs(selection) do
@@ -88,8 +86,8 @@ function M.DadbodOutputBuilder:mode_name()
   return "dadbod"
 end
 
----@param selection configuraiton_picks
----@return configuraiton_picks # picked configs
+---@param selection table<string, task_configuration>
+---@return table<string, task_configuration> # picked configs
 function M.DadbodOutputBuilder:preprocess(selection)
   -- get databases and queries from all configs
   local databases = {} -- only supports list
@@ -109,7 +107,7 @@ function M.DadbodOutputBuilder:preprocess(selection)
   vim.g["db_ui_table_helpers"] = queries
 
   -- return a single manufactured task capable of running in DadbodOutput
-  ---@type configuraiton_picks
+  ---@type table<string, task_configuration>
   return {
     ["__dadbod_output_builder_task_id__"] = {
       scope = "global",
@@ -146,10 +144,10 @@ function M.DapOutputBuilder:mode_name()
   return "debug"
 end
 
----@param selection configuraiton_picks
----@return configuraiton_picks # picked configs
+---@param selection table<string, task_configuration>
+---@return table<string, task_configuration> # picked configs
 function M.DapOutputBuilder:preprocess(selection)
-  ---@type configuraiton_picks
+  ---@type table<string, task_configuration>
   local picks = {}
 
   for id, config in pairs(selection) do
