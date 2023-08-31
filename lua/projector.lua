@@ -98,7 +98,11 @@ function M.status()
   if not check_setup() then
     return ""
   end
-  return table.concat(m.handler:status(), " ")
+  local task = m.handler:current()
+  if task:is_visible() then
+    return task:metadata().name
+  end
+  return ""
 end
 
 -- experimental and subject to change!

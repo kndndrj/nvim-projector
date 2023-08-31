@@ -3,6 +3,7 @@
 ---@field private bufnr integer
 ---@field private winid integer
 ---@field private state output_status
+---@field private job_id integer
 local TaskOutput = {}
 
 ---@return TaskOutput
@@ -51,7 +52,7 @@ function TaskOutput:init(configuration, callback)
 
   -- create new dummy window and open a terminal job inside
   vim.api.nvim_command("bo 15new")
-  vim.fn.termopen(command, term_options)
+  self.job_id = vim.fn.termopen(command, term_options)
 
   local winid = vim.api.nvim_get_current_win()
   self.bufnr = vim.api.nvim_get_current_buf()
@@ -122,6 +123,11 @@ function TaskOutput:hide()
 end
 
 function TaskOutput:kill()
+  -- kill the task
+  if self.job_id then
+    vim.fn.jobstop(self.job_id)
+  end
+
   -- close the window and delete the buffer
   pcall(vim.api.nvim_win_close, self.winid, true)
   pcall(vim.api.nvim_buf_delete, self.bufnr, { force = true })

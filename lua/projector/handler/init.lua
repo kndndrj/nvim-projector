@@ -252,20 +252,9 @@ function Handler:kill_task(opts)
   end
 end
 
----@return string[]
-function Handler:status()
-  local ret = {}
-
-  local current = self.lookup:get_selected(true)
-
-  for _, task in ipairs(self.lookup:get_all { live = true }) do
-    if task:metadata().id == current:metadata().id then
-      table.insert(ret, "[" .. task:metadata().name .. "]")
-    else
-      table.insert(ret, task:metadata().name)
-    end
-  end
-  return ret
+---@return Task
+function Handler:current()
+  return self.lookup:get_selected(true)
 end
 
 return Handler
