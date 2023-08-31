@@ -23,7 +23,8 @@ see [here](#configuration-object)), which have a different meaning depening on
 the used output.
 
 These configuration objects are loaded from different sources using `loaders`
-(see [TODO](<>)), preprocessed by output builders and later used as outputs.
+(see [here](#loaders)), preprocessed by output builders and later used as
+outputs.
 
 For example, configuration object is loaded from `tasks.json` file, `task`
 output builder preprocessor finds it compatible with it's output, so the task is
@@ -174,16 +175,20 @@ output mode.
 ```lua
 {
   -- These have special "global" meaning:
+  id = "specific.task.id" -- ID is optional, but can be useful for specifying dependencies
   name = "Task", -- task's name
-  scope = "global", -- usually project or global
-  group = "go", --  language group (use vim filetype names for best icon experience)
-  presentation = { "menuhidden" }, -- various presentation options (only "menuhidden" supported for now)
-  dependencies = {  -- list of task id's to run before this one
-    "project.go.Run", -- task's id is defined as "<scope>.<group>.<name>"
-    "global.go.Generate"
+  dependencies = {  -- list of task ids to run before this one
+    "setup.some.stuff",
+    "setup.some.more.stuff"
   },
-  after = "global.sh.After Task", -- task id to run after this one is finished
+  after = "cleanup.task.id", -- task id to run after this one is finished
   evaluate = "task", -- run this config in "task" mode immedialtely after loading
+  children = { -- nesting is also supported
+    {
+      name = "...",
+      -- ... other config fields
+    },
+ }
 }
 ```
 
@@ -257,7 +262,8 @@ Or you can choose to implement your own:
 ---@class OutputBuilder
 ---@field mode_name fun(self: OutputBuilder):task_mode function to return the name of the output mode (used as a display mode name)
 ---@field build fun(self: OutputBuilder):Output function to build the actual output
----@field preprocess fun(self: OutputBuilder, selection: table<string, task_configuration>):table<string, task_configuration> pick configs that suit the output (return only picked ones)
+---@field validate fun(self: OutputBuilder, configuration: task_configuration):boolean true if output can run the configuration, false otherwise
+---@field preprocess? fun(self: OutputBuilder, configurations: task_configuration[]):task_configuration[]? manufacture new configurations based on the ones passed in (don't return duplicates)
 ```
 
 ### Extensions
