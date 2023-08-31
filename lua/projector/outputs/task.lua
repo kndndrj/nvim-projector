@@ -1,5 +1,3 @@
-local utils = require("projector.utils")
-
 ---@class TaskOutput: Output
 ---@field private name string
 ---@field private bufnr integer
@@ -23,7 +21,7 @@ end
 ---@param configuration task_configuration
 ---@param callback fun(success: boolean)
 function TaskOutput:init(configuration, callback)
-  local name = configuration.name or "Builtin"
+  self.name = configuration.name or "Builtin"
 
   local command = configuration.command
   if configuration.args then
@@ -51,18 +49,17 @@ function TaskOutput:init(configuration, callback)
     end
   end
 
-  -- create new window and open a terminal job inside
+  -- create new dummy window and open a terminal job inside
   vim.api.nvim_command("bo 15new")
   vim.fn.termopen(command, term_options)
 
   local winid = vim.api.nvim_get_current_win()
   self.bufnr = vim.api.nvim_get_current_buf()
 
-  -- Rename and hide the buffer
-  vim.api.nvim_command("file " .. name .. " " .. self.bufnr)
-  vim.o.buflisted = false
+  -- hide the buffer
+  vim.api.nvim_buf_set_option(self.bufnr, "buflisted", false)
 
-  -- close the window
+  -- close the dummy window
   vim.api.nvim_win_close(winid, true)
 
   self.state = "hidden"
@@ -84,52 +81,50 @@ function TaskOutput:init(configuration, callback)
       self.state = "hidden"
     end,
   })
+  -- switch back to our buffer when trying to open a different buffer in this window
+  vim.api.nvim_create_autocmd({ "BufWinEnter", "BufWinLeave", "BufReadPost", "BufNewFile" }, {
+    callback = function(arg)
+      -- delete autocmd if output is dead
+      if not self.bufnr or self.state == "inactive" then
+        return true
+      end
+
+      local wid = vim.api.nvim_get_current_win()
+      if wid == self.winid and arg.buf ~= self.bufnr then
+        pcall(vim.api.nvim_win_set_buf, self.winid, self.bufnr)
+      end
+    end,
+  })
 end
 
 function TaskOutput:show()
-  if self.state == "inactive" or self.state == "" then
-    utils.log("warn", "Not live!", "Builtin Output " .. self.name)
-    return
-  elseif self.state == "visible" then
-    utils.log("info", "Already visible.", "Builtin Output " .. self.name)
+  -- Open a new window and open the buffer in it
+  if not self.bufnr then
+    self.state = "inactive"
     return
   end
 
-  -- Open a new window and open the buffer in it
   vim.api.nvim_command("15split")
-  self.winid = vim.fn.win_getid()
-  vim.api.nvim_command("b " .. self.bufnr)
+  self.winid = vim.api.nvim_get_current_win()
+  vim.api.nvim_win_set_buf(self.winid, self.bufnr)
+
+  -- set winbar
+  vim.api.nvim_win_set_option(self.winid, "winbar", self.name)
 
   self.state = "visible"
 end
 
 function TaskOutput:hide()
-  if self.state == "inactive" or self.state == "" then
-    utils.log("warn", "Not live!", "Builtin Output " .. self.name)
-    return
-  elseif self.state == "hidden" then
-    utils.log("info", "Already hidden.", "Builtin Output " .. self.name)
-    return
-  end
-
-  vim.api.nvim_win_close(self.winid, true)
+  pcall(vim.api.nvim_win_close, self.winid, true)
   self.winid = nil
 
   self.state = "hidden"
 end
 
 function TaskOutput:kill()
-  if self.state == "inactive" or self.state == "" then
-    return
-  end
-
-  if self.winid then
-    vim.api.nvim_win_close(self.winid, true)
-  end
-
-  if self.bufnr then
-    vim.api.nvim_buf_delete(self.bufnr, { force = true })
-  end
+  -- close the window and delete the buffer
+  pcall(vim.api.nvim_win_close, self.winid, true)
+  pcall(vim.api.nvim_buf_delete, self.bufnr, { force = true })
 
   self.state = "inactive"
 end

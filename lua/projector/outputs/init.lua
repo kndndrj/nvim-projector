@@ -130,7 +130,6 @@ function M.DadbodOutputBuilder:preprocess(configurations)
   vim.g["db_ui_table_helpers"] = queries
 
   -- return a single manufactured task capable of running in DadbodOutput
-  ---@type table<string, task_configuration>
   return {
     {
       name = self.name,

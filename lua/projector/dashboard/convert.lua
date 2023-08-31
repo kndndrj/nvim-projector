@@ -1,6 +1,7 @@
 -- This package provides functions to convert various
 -- structures to NuiTree nodes
 
+local utils = require("projector.utils")
 local NuiTree = require("nui.tree")
 local editor = require("projector.dashboard.editor")
 
@@ -103,7 +104,8 @@ function M.inactive_task_nodes(tasks)
       return {}
     end
 
-    local nodes = {}
+    local task_only_nodes = {} -- nodes that are only tasks
+    local group_nodes = {} -- nodes that have children
     for _, task in ipairs(tsks) do
       if not task:is_live() then
         local meta = task:metadata()
@@ -112,7 +114,9 @@ function M.inactive_task_nodes(tasks)
 
         -- child tasks
         local child_nodes = parse(task:get_children())
+        local has_children = false
         if #child_nodes > 0 then
+          has_children = true
           type = "task_group"
         end
 
@@ -148,11 +152,23 @@ function M.inactive_task_nodes(tasks)
           action_1 = action,
         }, child_nodes)
 
-        table.insert(nodes, node)
+        if has_children then
+          table.insert(group_nodes, node)
+        else
+          table.insert(task_only_nodes, node)
+        end
       end
     end
 
-    return nodes
+    if #group_nodes < 1 then
+      return task_only_nodes
+    end
+
+    if #task_only_nodes < 1 then
+      return group_nodes
+    end
+
+    return utils.merge_lists(task_only_nodes, M.separator_nodes(1), group_nodes)
   end
 
   return parse(tasks)

@@ -58,26 +58,30 @@ function Lookup:add_tasks(tasks)
   -- add tasks to lookup
   ---@param tsks Task[]
   ---@param as_children? boolean add tasks as children to other task
+  ---@return Task[] added
   local function add(tsks, as_children)
+    local added = {}
     for _, task in ipairs(tsks) do
       local id = task:metadata().id
 
-      -- add task's children to lookup too
-      add(task:get_children(), true)
+      -- add children to lookup and get added ones back
+      local childs = add(task:get_children(), true)
+      local config = task:config()
 
       -- if the task with id already exists, just update it's config
-      local existing = self.tasks[id]
-      if existing then
-        existing:update(task:config(), task:get_children())
-      else
-        self.tasks[id] = task
-      end
+      task = self.tasks[id] or task
+      task:update(config, childs)
+      -- add to lookup
+      self.tasks[id] = task
+      -- add to return list
+      table.insert(added, task)
 
       -- mark as children
       if as_children then
         self.child_lookup[id] = true
       end
     end
+    return added
   end
 
   add(tasks)
