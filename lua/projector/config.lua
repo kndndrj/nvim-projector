@@ -70,7 +70,12 @@ M.default = {
       },
       task_inactive = {
         icon = "",
-        icon_highlight = "Title",
+        icon_highlight = "MoreMsg",
+        text_highlight = "",
+      },
+      task_group = {
+        icon = "󱓼",
+        icon_highlight = "MoreMsg",
         text_highlight = "",
       },
       action = {

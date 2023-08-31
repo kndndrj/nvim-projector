@@ -3,11 +3,9 @@
 [
   {
     "name": "My Project",
-    "group": "go",
     "command": "go run ${workspaceFolder}/main.go",
     "dependencies": [
-      // <scope>.<group>.<name>
-      "project.go.Generate Stuff"
+      "generate-stuff-id"
     ],
     "type": "delve",
     "request": "launch",
@@ -25,8 +23,8 @@
     "showLog": false
   },
   {
+    "id": "generate-stuff-id",
     "name": "Generate Stuff",
-    "group": "go",
     "command": "go generate",
     "args": [
       "${workspaceFolder}/tools.go"
@@ -34,7 +32,6 @@
   },
   {
     "name": "Ls",
-    "group": "sh",
     "command": "ls",
     "args": [
       "-a",
@@ -44,7 +41,6 @@
   },
   {
     "name": "Postgres DB",
-    "group": "sql",
     "databases": [
       {
         "name": "my-db",
@@ -58,3 +54,4 @@
     }
   }
 ]
+// vim: ft=jsonc

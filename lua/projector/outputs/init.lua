@@ -1,3 +1,5 @@
+---@diagnostic disable:undefined-field
+
 local TaskOutput = require("projector.outputs.task")
 local DadbodOutput = require("projector.outputs.dadbod")
 local DapOutput = require("projector.outputs.dap")
@@ -17,7 +19,8 @@ local M = {}
 ---@class OutputBuilder
 ---@field mode_name fun(self: OutputBuilder):task_mode function to return the name of the output mode (used as a display mode name)
 ---@field build fun(self: OutputBuilder):Output function to build the actual output
----@field preprocess fun(self: OutputBuilder, selection: table<string, task_configuration>):table<string, task_configuration> pick configs that suit the output (return only picked ones)
+---@field validate fun(self: OutputBuilder, configuration: task_configuration):boolean true if output can run the configuration, false otherwise
+---@field preprocess? fun(self: OutputBuilder, configurations: task_configuration[]):task_configuration[]? manufacture new configurations based on the ones passed in (don't return duplicates)
 
 --
 -- Builder for the TaskOutput
@@ -45,31 +48,28 @@ function M.TaskOutputBuilder:mode_name()
   return "task"
 end
 
----@param selection table<string, task_configuration>
----@return table<string, task_configuration> # picked configs
-function M.TaskOutputBuilder:preprocess(selection)
-  ---@type table<string, task_configuration>
-  local picks = {}
-
-  for id, config in pairs(selection) do
-    if config.command then
-      picks[id] = config
-    end
+---@param configuration task_configuration
+---@return boolean
+function M.TaskOutputBuilder:validate(configuration)
+  if configuration and configuration.command then
+    return true
   end
-
-  return picks
+  return false
 end
 
 --
 -- Builder for the DadbodOutput
 --
 ---@class DadbodOutputBuilder: OutputBuilder
+---@field private name string
 M.DadbodOutputBuilder = {}
 
 -- new builder
 ---@return DadbodOutputBuilder
 function M.DadbodOutputBuilder:new()
-  local o = {}
+  local o = {
+    name = "Dadbod",
+  }
   setmetatable(o, self)
   self.__index = self
   return o
@@ -86,21 +86,44 @@ function M.DadbodOutputBuilder:mode_name()
   return "dadbod"
 end
 
----@param selection table<string, task_configuration>
----@return table<string, task_configuration> # picked configs
-function M.DadbodOutputBuilder:preprocess(selection)
+---@param configuration task_configuration
+---@return boolean
+function M.DadbodOutputBuilder:validate(configuration)
+  if
+    configuration
+    and configuration.name == self.name
+    and configuration.evaluate == self:mode_name()
+  then
+    return true
+  end
+  return false
+end
+
+---@param configurations task_configuration[]
+---@return task_configuration[]
+function M.DadbodOutputBuilder:preprocess(configurations)
   -- get databases and queries from all configs
   local databases = {} -- only supports list
   local queries = {} -- table of dadbod-ui structured table helpers
-  for _, config in pairs(selection) do
-    if vim.tbl_islist(config.databases) then
-      vim.list_extend(databases, config.databases)
-    end
 
-    if type(config.queries) == "table" then
-      queries = vim.tbl_deep_extend("keep", queries, config.queries)
+  ---@param cfgs task_configuration[]
+  local function parse(cfgs)
+    for _, c in ipairs(cfgs) do
+      if vim.tbl_islist(c.databases) then
+        vim.list_extend(databases, c.databases)
+      end
+
+      if type(c.queries) == "table" then
+        queries = vim.tbl_deep_extend("keep", queries, c.queries)
+      end
+
+      if vim.tbl_islist(c.children) then
+        parse(c.children)
+      end
     end
   end
+
+  parse(configurations)
 
   -- register in global dadbod variables
   vim.g["dbs"] = databases
@@ -109,10 +132,8 @@ function M.DadbodOutputBuilder:preprocess(selection)
   -- return a single manufactured task capable of running in DadbodOutput
   ---@type table<string, task_configuration>
   return {
-    ["__dadbod_output_builder_task_id__"] = {
-      scope = "global",
-      group = "db",
-      name = "Dadbod",
+    {
+      name = self.name,
       evaluate = self:mode_name(),
     },
   }
@@ -144,19 +165,13 @@ function M.DapOutputBuilder:mode_name()
   return "debug"
 end
 
----@param selection table<string, task_configuration>
----@return table<string, task_configuration> # picked configs
-function M.DapOutputBuilder:preprocess(selection)
-  ---@type table<string, task_configuration>
-  local picks = {}
-
-  for id, config in pairs(selection) do
-    if config.type and config.request then
-      picks[id] = config
-    end
+---@param configuration task_configuration
+---@return boolean
+function M.DapOutputBuilder:validate(configuration)
+  if configuration and configuration.type and configuration.request then
+    return true
   end
-
-  return picks
+  return false
 end
 
 return M

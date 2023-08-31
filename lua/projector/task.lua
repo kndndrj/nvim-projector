@@ -1,19 +1,16 @@
 local utils = require("projector.utils")
 
----@alias presentation "menuhidden"|""
-
 -- Id of the task
 ---@alias task_id string
 
 -- Table of configuration parameters
 ---@class task_configuration
+---@field id string
 ---@field name string
----@field scope string
----@field group string
----@field presentation presentation|presentation[]
 ---@field dependencies task_id[]
 ---@field after task_id
 ---@field evaluate task_mode -- evaluate the specified output immediately if any mode matches the specified one
+---@field children task_configuration[] -- group multiple configurations together
 
 -- Table of actions
 ---@alias task_action { label: string, action: fun( ), override?: boolean, nested?: task_action[] }
@@ -22,14 +19,11 @@ local utils = require("projector.utils")
 ---@alias task_mode string
 
 -- Metadata of a task
----@alias task_meta { id: string, name: string, scope: string, group: string }
-
--- Presentation of the task in ui
----@alias task_presentation { menu: { show: boolean } }
+---@alias task_meta { id: string, name: string }
 
 ---@class Task
+---@field private children Task[]
 ---@field private meta task_meta
----@field private present task_presentation
 ---@field private configuration task_configuration Configuration of the task (command, args, env, cwd...)
 ---@field private modes_list task_mode[] What can the task do (debug, task)
 ---@field private last_mode task_mode Mode that was selected previously
@@ -44,32 +38,30 @@ local utils = require("projector.utils")
 local Task = {}
 
 ---@param configuration task_configuration
+---@param children? Task[] list of child tasks
 ---@param output_builders OutputBuilder[] map of available output builders
 ---@param opts? { dependency_mode: task_mode, on_run: fun(as_dependency: boolean):(boolean), on_show: fun(), expand_config: fun(config: task_configuration):task_configuration }
 ---@return Task?
-function Task:new(configuration, output_builders, opts)
+function Task:new(configuration, children, output_builders, opts)
   if not configuration then
     return
   end
-  if not output_builders or #output_builders == 0 then
+  if not output_builders or #output_builders < 1 then
     return
   end
   opts = opts or {}
 
-  -- check output capabilities
-  ---@type string[]
-  local modes = {}
+  -- make output builder lookup
   local builders = {}
   for _, builder in ipairs(output_builders) do
-    table.insert(modes, builder:mode_name())
     builders[builder:mode_name()] = builder
   end
 
   local o = {
+    children = children or {},
     meta = {},
     configuration = configuration,
-    present = {},
-    modes_list = modes,
+    modes_list = {},
     last_mode = nil,
     dependency_mode = opts.dependency_mode,
     dependencies = {},
@@ -88,41 +80,39 @@ function Task:new(configuration, output_builders, opts)
   self.__index = self
 
   -- configure metadata and other config related stuff
-  o:update_config(configuration)
+  if not o:update(configuration, children) then
+    return
+  end
 
   return o
 end
 
--- updates task's config
+-- updates task's config and parameters
 ---@param configuration task_configuration
-function Task:update_config(configuration)
-  -- presentation
-  self.present = {
-    menu = {
-      show = true,
-    },
-  }
-  if configuration.presentation then
-    local present = configuration.presentation
-    if type(present) == "string" then
-      present = { present }
-    end
-    for _, p in ipairs(present) do
-      if p == "menuhidden" then
-        self.present.menu.show = false
-      end
+---@param children? Task[]
+---@return boolean ok
+function Task:update(configuration, children)
+  if not configuration then
+    return false
+  end
+  -- update children
+  self.children = children or {}
+
+  -- check available modes
+  self.modes_list = {}
+  for _, builder in pairs(self.output_builders) do
+    if builder:validate(self.configuration) then
+      table.insert(self.modes_list, builder:mode_name())
     end
   end
+  if #self.modes_list < 1 and #self.children < 1 then
+    return false
+  end
 
-  -- metadata
-  local name = configuration.name or "[empty name]"
-  local scope = configuration.scope or "[empty scope]"
-  local group = configuration.group or "[empty group]"
+  -- update metadata
   self.meta = {
-    id = scope .. "." .. group .. "." .. name,
-    name = name,
-    scope = scope,
-    group = group,
+    id = configuration.id or configuration.name or tostring(math.random()),
+    name = configuration.name or "<unnamed task>",
   }
 
   -- evaluate the possibly specified output
@@ -134,6 +124,8 @@ function Task:update_config(configuration)
     end
     self.last_mode = eval_mode
   end
+
+  return true
 end
 
 -- Run a task and hadle it's dependencies
@@ -228,6 +220,11 @@ function Task:config()
   return self.configuration
 end
 
+---@return Task[]
+function Task:get_children()
+  return self.children
+end
+
 -- sets dependencies and after tasks
 ---@param deps Task[]
 ---@param after? Task
@@ -294,11 +291,6 @@ function Task:actions()
     return o:actions() or {}
   end
   return {}
-end
-
----@return task_presentation
-function Task:presentation()
-  return self.present
 end
 
 return Task

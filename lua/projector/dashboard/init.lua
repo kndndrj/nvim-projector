@@ -15,7 +15,7 @@ local NuiLine = require("nui.line")
 ---@class Node
 ---@field id string
 ---@field name string
----@field type "task_visible"|"task_inactive"|"task_hidden"|"action"|"loader"|"mode"|"group"|""
+---@field type "task_visible"|"task_inactive"|"task_hidden"|"task_group"|"action"|"loader"|"mode"|"group"|""
 ---@field comment? string
 -- action functions:
 ---@field action_1? fun()
@@ -101,7 +101,7 @@ function Dashboard:create_tree(bufnr, nodes)
       if node.id then
         return node.id
       end
-      return math.random()
+      return tostring(math.random())
     end,
   }
 
@@ -224,10 +224,11 @@ function Dashboard:configure_autocmds(tree, bufnr)
 end
 
 -- Show dashboard on screen
----@param tasks Task[] list of tasks to display
+---@param inactive_tasks Task[] list of inactive tasks to display
+---@param active_tasks Task[] list of inactive tasks to display
 ---@param loaders Loader[] list of loaders to display
 ---@param reload_handle fun() function that reloads the sources when called
-function Dashboard:open(tasks, loaders, reload_handle)
+function Dashboard:open(inactive_tasks, active_tasks, loaders, reload_handle)
   -- open popup
   local left_bufnr, right_bufnr = self.popup:open()
 
@@ -235,8 +236,8 @@ function Dashboard:open(tasks, loaders, reload_handle)
   -- left panel
   --
   -- get nodes from tasks and loaders or show help
-  local inactive_task_nodes = convert.inactive_task_nodes(tasks)
-  if #tasks < 1 then
+  local inactive_task_nodes = convert.inactive_task_nodes(inactive_tasks)
+  if #inactive_tasks < 1 then
     inactive_task_nodes = convert.help_no_task_nodes()
   end
   local loader_nodes = convert.loader_nodes(loaders, reload_handle)
@@ -259,7 +260,7 @@ function Dashboard:open(tasks, loaders, reload_handle)
   --
   -- right panel
   --
-  self.right_tree = self:create_tree(right_bufnr, convert.active_task_nodes(tasks))
+  self.right_tree = self:create_tree(right_bufnr, convert.active_task_nodes(active_tasks))
   self:map_keys(self.right_tree, right_bufnr)
   self:configure_autocmds(self.right_tree, right_bufnr)
 

@@ -1,8 +1,6 @@
+local utils = require("projector.utils")
 local Task = require("projector.task")
 local Lookup = require("projector.handler.lookup")
-
--- Information that's displayed in the picker
----@alias display { loader: string, scope: string, group: string, name: string, modes: string|string[] }
 
 ---@class Handler
 ---@field private dashboard Dashboard
@@ -45,66 +43,26 @@ function Handler:new(dashboard, loaders, output_builders, opts)
   return o
 end
 
--- internediate type used for loading configs from sources
----@alias _records table<string, { config: task_configuration, loader: Loader, output_builders: OutputBuilder[] }>
-
----@param records _records
----@return table<string, task_configuration>
-local function to_picks(records)
-  ---@type table<string, task_configuration>
-  local picks = {}
-
-  for id, rec in pairs(records) do
-    picks[id] = rec.config
-  end
-
-  return picks
-end
-
 -- get preprocessed records from output builders
 ---@private
----@param records _records
----@return _records
-function Handler:preprocess(records)
-  local selection = to_picks(records)
-
-  ---@type _records
-  local selected = {}
-
+---@param configs task_configuration[]
+function Handler:preprocess(configs)
   for _, builder in ipairs(self.output_builders) do
-    local picked = builder:preprocess(selection)
-
-    for id, cfg in pairs(picked) do
-      if selected[id] and selected[id].output_builders then
-        table.insert(selected[id].output_builders, builder)
-      else
-        local rec = records[id] or {}
-        selected[id] = { config = cfg, output_builders = { builder }, loader = rec.loader }
-      end
+    if type(builder.preprocess) == "function" then
+      configs = utils.merge_lists(configs, builder:preprocess(configs))
     end
   end
-
-  return selected
+  return configs
 end
 
--- Load tasks from all loaders
--- and adds them to internal lookup
-function Handler:reload_configs()
-  ---@type _records
-  local records = {}
-
-  -- Load all tasks from different loaders
-  for _, loader in pairs(self.loaders) do
-    local configs = loader:load()
-    if configs then
-      for _, cfg in ipairs(configs) do
-        records[math.random()] = { config = cfg, loader = loader }
-      end
-    end
+-- create tasks from records
+---@private
+---@param cfgs task_configuration[]
+---@return Task[]
+function Handler:create_tasks(cfgs)
+  if not cfgs then
+    return {}
   end
-
-  -- filter records using outputs
-  records = self:preprocess(records)
 
   local hide_all = function()
     for _, t in pairs(self.lookup:get_all { visible = true }) do
@@ -112,16 +70,22 @@ function Handler:reload_configs()
     end
   end
 
-  -- create tasks from records
   ---@type Task[]
   local tasks = {}
-  for _, rec in pairs(records) do
+
+  for _, cfg in ipairs(cfgs) do
+    -- get loader for variable expansion
+    local loader = cfg._loader
+    cfg._loader = nil
+
+    local children = self:create_tasks(cfg.children)
+
     local task
-    task = Task:new(rec.config, rec.output_builders, {
+    task = Task:new(cfg, children, self.output_builders, {
       dependency_mode = self.depencency_mode,
       expand_config = function(c)
-        if rec.loader and type(rec.loader.expand) == "function" then
-          return rec.loader:expand(c)
+        if loader and type(loader.expand) == "function" then
+          return loader:expand(c)
         end
         return c
       end,
@@ -148,8 +112,39 @@ function Handler:reload_configs()
     end
   end
 
+  return tasks
+end
+
+-- Load tasks from all loaders
+-- and adds them to internal lookup
+function Handler:reload_configs()
+  ---@param cfgs? task_configuration[]
+  ---@param loader Loader
+  local function set_loader(cfgs, loader)
+    if not cfgs then
+      return
+    end
+    for _, cfg in ipairs(cfgs) do
+      cfg._loader = loader
+      set_loader(cfg.children, loader)
+    end
+  end
+
+  ---@type task_configuration[]
+  local configs = {}
+
+  -- Load all tasks from different loaders
+  for _, loader in pairs(self.loaders) do
+    local loaded_configs = loader:load()
+    set_loader(loaded_configs, loader)
+    configs = utils.merge_lists(configs, loaded_configs)
+  end
+
+  -- filter records using outputs
+  configs = self:preprocess(configs)
+
   -- add tasks to lookup
-  self.lookup:replace_tasks(tasks)
+  self.lookup:replace_tasks(self:create_tasks(configs))
 end
 
 -- entrypoint to task selection
@@ -165,9 +160,14 @@ function Handler:continue()
   end
 
   -- show dashboard
-  self.dashboard:open(self.lookup:get_all(), self.loaders, function()
-    self:reload_configs()
-  end)
+  self.dashboard:open(
+    self.lookup:get_all { live = false, suppress_children = true },
+    self.lookup:get_all { live = true },
+    self.loaders,
+    function()
+      self:reload_configs()
+    end
+  )
 end
 
 -- checks all live tasks for actions and triggers overrides if there are any

@@ -24,10 +24,8 @@ function DapLoader:load()
   ---@type task_configuration[]
   local configurations = {}
 
-  for group, configs in pairs(dap.configurations) do
+  for _, configs in pairs(dap.configurations) do
     for _, config in ipairs(configs) do
-      config.scope = "global"
-      config.group = group
       table.insert(configurations, config)
     end
   end

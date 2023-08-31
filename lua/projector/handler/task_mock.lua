@@ -31,8 +31,6 @@ function MockedTask:metadata()
   return {
     id = "mocked.task.id",
     name = "mocked task",
-    scope = "mocked",
-    group = "task",
   }
 end
 
@@ -73,15 +71,6 @@ function MockedTask:kill() end
 ---@return task_action[]
 function MockedTask:actions()
   return {}
-end
-
----@return task_presentation
-function MockedTask:presentation()
-  return {
-    menu = {
-      show = true,
-    },
-  }
 end
 
 return MockedTask

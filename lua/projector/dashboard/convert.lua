@@ -2,7 +2,6 @@
 -- structures to NuiTree nodes
 
 local NuiTree = require("nui.tree")
-local utils = require("projector.utils")
 local editor = require("projector.dashboard.editor")
 
 local M = {}
@@ -61,7 +60,7 @@ function M.active_task_nodes(tasks)
         id = meta.id,
         name = meta.name,
         type = type,
-        comment = meta.group .. " - " .. current_mode,
+        comment = current_mode,
         -- show
         action_1 = function()
           task:show()
@@ -97,74 +96,66 @@ end
 ---@param tasks Task[] list of all tasks
 ---@return Node[]
 function M.inactive_task_nodes(tasks)
-  local normal_nodes = {}
+  ---@param tsks Task[]
+  ---@return Node[]
+  local function parse(tsks)
+    if not tsks then
+      return {}
+    end
 
-  -- nodes that are hidden in the menu (because of presentation options)
-  local menuhidden_nodes = {}
+    local nodes = {}
+    for _, task in ipairs(tsks) do
+      if not task:is_live() then
+        local meta = task:metadata()
+        local modes, _ = task:modes()
+        local type = "task_inactive"
 
-  for _, task in ipairs(tasks) do
-    if not task:is_live() then
-      local meta = task:metadata()
-      -- handle modes
-      local modes, _ = task:modes()
-      local action
-      local children = {}
-      if #modes == 1 then
-        action = function()
-          task:run { mode = modes[1] }
+        -- child tasks
+        local child_nodes = parse(task:get_children())
+        if #child_nodes > 0 then
+          type = "task_group"
         end
-      elseif #modes > 1 then
-        for _, mode in ipairs(modes) do
-          table.insert(
-            children,
-            NuiTree.Node {
-              id = meta.id .. mode,
-              name = mode,
-              type = "mode",
-              action_1 = function()
-                task:run { mode = mode }
-              end,
-            }
-          )
+
+        local action
+        if #child_nodes < 1 and #modes == 1 then
+          -- no children, single mode
+          action = function()
+            task:run { mode = modes[1] }
+          end
+        else
+          -- multiple modes, and/or child nodes
+          for _, mode in ipairs(modes) do
+            table.insert(
+              child_nodes,
+              1,
+              NuiTree.Node {
+                id = meta.id .. mode,
+                name = mode,
+                type = "mode",
+                action_1 = function()
+                  task:run { mode = mode }
+                end,
+              }
+            )
+          end
         end
-      end
 
-      local node = NuiTree.Node({
-        id = meta.id,
-        name = meta.name,
-        comment = meta.group .. " - " .. table.concat(modes, "|"),
-        type = "task_inactive",
-        action_1 = action,
-      }, children)
+        local node = NuiTree.Node({
+          id = meta.id,
+          name = meta.name,
+          comment = table.concat(modes, "|"),
+          type = type,
+          action_1 = action,
+        }, child_nodes)
 
-      -- put in appropriate list based on presentation
-      if task:presentation().menu.show then
-        table.insert(normal_nodes, node)
-      else
-        table.insert(menuhidden_nodes, node)
+        table.insert(nodes, node)
       end
     end
+
+    return nodes
   end
 
-  -- if there aren't any normal nodes, return hidden ones as normal
-  if #normal_nodes < 1 then
-    return menuhidden_nodes
-  end
-
-  -- if there aren't any hidden nodes, return just the normal ones
-  if #menuhidden_nodes < 1 then
-    return normal_nodes
-  end
-
-  -- if there are hidden and normal nodes, add hidden ones under a fold
-
-  local hidden_fold_node = NuiTree.Node({
-    id = "__menuhidden_nodes_ui__",
-    name = "hidden",
-    type = "group",
-  }, menuhidden_nodes)
-
-  return utils.merge_lists(normal_nodes, M.separator_nodes(1), { hidden_fold_node })
+  return parse(tasks)
 end
 
 -- retrieve loader nodes

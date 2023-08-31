@@ -4,6 +4,7 @@ local MockedTask = require("projector.handler.task_mock")
 -- and their relations
 ---@class Lookup
 ---@field private tasks table<task_id, Task> map of tasks
+---@field private child_lookup table<task_id, boolean> lookup to check if a task is a child or not
 ---@field private order task_id[] order of tasks (task ids)
 ---@field private order_lookup table<task_id, integer> lookup for task's position in the order list
 ---@field private selected task_id selected task's id
@@ -15,6 +16,7 @@ function Lookup:new()
     tasks = {},
     order = {},
     order_lookup = {},
+    child_lookup = {},
   }
   setmetatable(o, self)
   self.__index = self
@@ -36,7 +38,11 @@ function Lookup:replace_tasks(tasks)
     end
   end
 
+  -- preserve live tasks
   self.tasks = keep
+
+  -- reset child status
+  self.child_lookup = {}
 
   -- add new tasks
   self:add_tasks(tasks)
@@ -50,17 +56,31 @@ function Lookup:add_tasks(tasks)
   end
 
   -- add tasks to lookup
-  for _, task in ipairs(tasks) do
-    local id = task:metadata().id
+  ---@param tsks Task[]
+  ---@param as_children? boolean add tasks as children to other task
+  local function add(tsks, as_children)
+    for _, task in ipairs(tsks) do
+      local id = task:metadata().id
 
-    -- if the task with id already exists, just update it's config
-    local existing = self.tasks[id]
-    if existing then
-      existing:update_config(task:config())
-    else
-      self.tasks[id] = task
+      -- add task's children to lookup too
+      add(task:get_children(), true)
+
+      -- if the task with id already exists, just update it's config
+      local existing = self.tasks[id]
+      if existing then
+        existing:update(task:config(), task:get_children())
+      else
+        self.tasks[id] = task
+      end
+
+      -- mark as children
+      if as_children then
+        self.child_lookup[id] = true
+      end
     end
   end
+
+  add(tasks)
 
   -- update order
   self.order = {}
@@ -102,7 +122,7 @@ function Lookup:configure_dependencies()
   end
 end
 
----@param filter? { live: boolean, visible: boolean }
+---@param filter? { live: boolean, visible: boolean, suppress_children: boolean }
 ---@return Task[] tasks
 function Lookup:get_all(filter)
   local tasks = {}
@@ -118,6 +138,8 @@ function Lookup:get_all(filter)
     elseif filter.visible == true and not task:is_visible() then
       goto continue
     elseif filter.visible == false and task:is_visible() then
+      goto continue
+    elseif filter.suppress_children == true and self.child_lookup[id] then
       goto continue
     end
 
