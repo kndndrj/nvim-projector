@@ -48,4 +48,41 @@ function M.log(level, message, subtitle)
   vim.notify(subtitle .. " " .. message, l, { title = "nvim-projector" })
 end
 
+-- pretty prints a key-value table
+---@param obj table<string, any>
+---@return string[]
+function M.format_table(obj)
+  ---@type string[]
+  local keys = {}
+
+  local max_len = 0
+  for k, _ in pairs(obj) do
+    table.insert(keys, k)
+    local len = string.len(k)
+    if len > max_len then
+      max_len = len
+    end
+  end
+
+  table.sort(keys)
+
+  ---@type string[]
+  local out = {}
+  for _, k in ipairs(keys) do
+    local value = obj[k]
+    if type(value) == "table" then
+      value = "{ ... }"
+    elseif type(value) == "function" then
+      value = "fun()"
+    end
+    if type(value) ~= "string" then
+      value = tostring(value)
+    end
+    local line = k .. ":  " .. string.rep(" ", max_len - string.len(k)) .. value
+    table.insert(out, line)
+  end
+
+  return out
+end
+
 return M

@@ -22,7 +22,8 @@ local NuiLine = require("nui.line")
 ---@field action_2? fun()
 ---@field action_3? fun()
 -- other:
----@field is_empty boolean
+---@field is_empty? boolean
+---@field preview? fun(max_lines: integer):string[]
 
 ---@class Dashboard
 ---@field private left_tree table NuiTree
@@ -43,7 +44,7 @@ function Dashboard:new(opts)
   end
 
   local o = {
-    popup = Popup:new("Tasks:", "Active:", opts.popup),
+    popup = Popup:new("Tasks:", "Active:", "Preview", opts.popup),
     mappings = opts.mappings or {},
     candies = candies,
   }
@@ -184,7 +185,8 @@ end
 ---@private
 ---@param tree table NuiTree
 ---@param bufnr integer
-function Dashboard:configure_autocmds(tree, bufnr)
+---@param preview_bufnr integer
+function Dashboard:configure_autocmds(tree, bufnr, preview_bufnr)
   local previous_row = 0
 
   local function move_cursor()
@@ -221,6 +223,68 @@ function Dashboard:configure_autocmds(tree, bufnr)
       pcall(move_cursor)
     end,
   })
+
+  -- update preview on move
+  vim.api.nvim_create_autocmd({ "CursorMoved" }, {
+    buffer = bufnr,
+    callback = function()
+      self:update_preview(preview_bufnr)
+    end,
+  })
+end
+
+-- updates preview window with the currently selected node's preview
+---@private
+---@param bufnr integer preview buffer
+function Dashboard:update_preview(bufnr)
+  ---@param max_lines integer
+  ---@return string[]?
+  local function get_preview(max_lines)
+    local focus = self.popup:get_focus()
+    local tree
+    if focus == "left" then
+      tree = self.left_tree
+    elseif focus == "right" then
+      tree = self.right_tree
+    end
+    if not tree then
+      return
+    end
+    local node = tree:get_node()
+    if not node or type(node.preview) ~= "function" then
+      return
+    end
+
+    return node.preview(max_lines)
+  end
+
+  -- get max lines of the preview window
+  local _, height = self.popup:dimensions()
+  local max_lines = math.floor(height / 2)
+
+  local preview = get_preview(max_lines) or {}
+
+  -- display first n records of the preview
+  vim.api.nvim_buf_set_lines(bufnr, 0, -1, true, { unpack(preview, 1, max_lines) })
+  vim.api.nvim_buf_set_option(bufnr, "modified", false)
+end
+
+---@private
+---@param bufnr integer
+---@return fun() # timer cancel function
+function Dashboard:configure_autopreview(bufnr)
+  local update = function()
+    self:update_preview(bufnr)
+  end
+
+  -- first time call manually
+  update()
+
+  -- setup timer for recurring calls
+  local timer = vim.fn.timer_start(300, update, { ["repeat"] = -1 })
+  return function()
+    vim.fn.timer_stop(timer)
+  end
 end
 
 -- Show dashboard on screen
@@ -230,7 +294,12 @@ end
 ---@param reload_handle fun() function that reloads the sources when called
 function Dashboard:open(inactive_tasks, active_tasks, loaders, reload_handle)
   -- open popup
-  local left_bufnr, right_bufnr = self.popup:open()
+  local timer_cancel
+  local left_bufnr, right_bufnr, bottom_bufnr = self.popup:open(function()
+    if timer_cancel then
+      timer_cancel()
+    end
+  end)
 
   --
   -- left panel
@@ -245,24 +314,17 @@ function Dashboard:open(inactive_tasks, active_tasks, loaders, reload_handle)
     loader_nodes = convert.help_no_loader_nodes()
   end
 
-  -- calculate number of separators so that loaders are near the bottom of the window
-  local _, height = self.popup:dimensions()
-  local n_sep = height - #inactive_task_nodes - #loader_nodes - 3
-  if n_sep < 1 then
-    n_sep = 1
-  end
-
   self.left_tree =
-    self:create_tree(left_bufnr, utils.merge_lists(inactive_task_nodes, convert.separator_nodes(n_sep), loader_nodes))
+    self:create_tree(left_bufnr, utils.merge_lists(inactive_task_nodes, convert.separator_nodes(1), loader_nodes))
   self:map_keys(self.left_tree, left_bufnr)
-  self:configure_autocmds(self.left_tree, left_bufnr)
+  self:configure_autocmds(self.left_tree, left_bufnr, bottom_bufnr)
 
   --
   -- right panel
   --
   self.right_tree = self:create_tree(right_bufnr, convert.active_task_nodes(active_tasks))
   self:map_keys(self.right_tree, right_bufnr)
-  self:configure_autocmds(self.right_tree, right_bufnr)
+  self:configure_autocmds(self.right_tree, right_bufnr, bottom_bufnr)
 
   -- set focus to left
   self.popup:set_focus("left")
@@ -270,6 +332,9 @@ function Dashboard:open(inactive_tasks, active_tasks, loaders, reload_handle)
   -- render trees
   self.left_tree:render()
   self.right_tree:render()
+
+  -- set up auto previewing
+  timer_cancel = self:configure_autopreview(bottom_bufnr)
 end
 
 return Dashboard

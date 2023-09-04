@@ -161,7 +161,7 @@ function Lookup:get(id)
   return self.tasks[id]
 end
 
----@param live? boolean select the first live task if the selected one is not running
+---@param live? boolean get the first live task if the selected one is not running
 ---@return Task
 function Lookup:get_selected(live)
   local task = self.tasks[self.selected] or self:select_next()

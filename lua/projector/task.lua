@@ -293,4 +293,19 @@ function Task:actions()
   return {}
 end
 
+---@param max_lines integer
+---@return string[]
+function Task:preview(max_lines)
+  local o = self.output
+  if o and o:status() ~= "inactive" and o:status() ~= "" then
+    if type(o.preview) == "function" then
+      return o:preview(max_lines) or {}
+    end
+    return {}
+  end
+
+  -- return formatted config by default
+  return utils.format_table(self.configuration)
+end
+
 return Task

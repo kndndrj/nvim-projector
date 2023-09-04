@@ -254,7 +254,7 @@ end
 
 ---@return Task
 function Handler:current()
-  return self.lookup:get_selected(true)
+  return self.lookup:get_selected()
 end
 
 return Handler

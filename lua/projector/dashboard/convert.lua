@@ -16,8 +16,9 @@ function M.active_task_nodes(tasks)
 
   ---@param actions task_action[]
   ---@param parent_id string
+  ---@param previewer? fun(max_lines: integer)
   ---@return Node[]
-  local function parse_actions(actions, parent_id)
+  local function parse_actions(actions, parent_id, previewer)
     actions = actions or {}
     local action_nodes = {}
     for _, action in ipairs(actions) do
@@ -36,10 +37,8 @@ function M.active_task_nodes(tasks)
         name = action.label,
         type = "action",
         action_1 = node_action,
-      }, parse_actions(action.nested, id))
-
-      -- expand by default (show nested actions)
-      node:expand()
+        preview = previewer,
+      }, parse_actions(action.nested, id, previewer))
 
       table.insert(action_nodes, node)
     end
@@ -56,6 +55,10 @@ function M.active_task_nodes(tasks)
         type = "task_visible"
       end
       local _, current_mode = task:modes()
+
+      local previewer = function(max_lines)
+        return task:preview(max_lines)
+      end
 
       local node = NuiTree.Node({
         id = meta.id,
@@ -74,7 +77,8 @@ function M.active_task_nodes(tasks)
         action_3 = function()
           task:kill()
         end,
-      }, parse_actions(task:actions(), meta.id))
+        preview = previewer,
+      }, parse_actions(task:actions(), meta.id, previewer))
 
       -- expand by default (show actions)
       node:expand()
@@ -110,6 +114,7 @@ function M.inactive_task_nodes(tasks)
       if not task:is_live() then
         local meta = task:metadata()
         local modes, _ = task:modes()
+        table.sort(modes)
         local type = "task_inactive"
 
         -- child tasks
@@ -118,6 +123,10 @@ function M.inactive_task_nodes(tasks)
         if #child_nodes > 0 then
           has_children = true
           type = "task_group"
+        end
+
+        local previewer = function(max_lines)
+          return task:preview(max_lines)
         end
 
         local action
@@ -139,6 +148,7 @@ function M.inactive_task_nodes(tasks)
                 action_1 = function()
                   task:run { mode = mode }
                 end,
+                preview = previewer,
               }
             )
           end
@@ -150,12 +160,15 @@ function M.inactive_task_nodes(tasks)
           comment = table.concat(modes, "|"),
           type = type,
           action_1 = action,
+          preview = previewer,
         }, child_nodes)
 
-        if has_children then
-          table.insert(group_nodes, node)
-        else
-          table.insert(task_only_nodes, node)
+        if #child_nodes > 0 or action ~= nil then
+          if has_children then
+            table.insert(group_nodes, node)
+          else
+            table.insert(task_only_nodes, node)
+          end
         end
       end
     end
@@ -184,6 +197,7 @@ function M.loader_nodes(loaders, reload_handle)
   for _, loader in ipairs(loaders) do
     local node_action
     local comment
+    local previewer
     if type(loader.file) == "function" and vim.loop.fs_stat(loader:file()) then
       node_action = function()
         editor.open(loader:file(), {
@@ -191,7 +205,27 @@ function M.loader_nodes(loaders, reload_handle)
           callback = reload_handle,
         })
       end
+
       comment = "edit"
+
+      previewer = function(max_lines)
+        local file = io.open(loader:file())
+        if not file then
+          return
+        end
+        local lines = {}
+        local i = 1
+        for line in file:lines() do
+          if i > max_lines then
+            break
+          end
+          table.insert(lines, line)
+          i = i + 1
+        end
+        io.close(file)
+        print(#lines)
+        return lines
+      end
     end
 
     table.insert(
@@ -202,6 +236,7 @@ function M.loader_nodes(loaders, reload_handle)
         type = "loader",
         action_1 = node_action,
         comment = comment,
+        preview = previewer,
       }
     )
   end

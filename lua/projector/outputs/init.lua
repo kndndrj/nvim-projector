@@ -15,6 +15,7 @@ local M = {}
 ---@field show fun(self: Output) function to show the ouput on screen
 ---@field hide fun(self: Output) function to hide the output off the screen
 ---@field actions? fun(self: Output):task_action[] function to list any available actions of the output
+---@field preview? fun(self: Output, max_lines: integer):string[]? function to return a preview of output (to show in the dashboard) - max_lines indicates how many lines to show
 
 ---@class OutputBuilder
 ---@field mode_name fun(self: OutputBuilder):task_mode function to return the name of the output mode (used as a display mode name)
@@ -89,11 +90,7 @@ end
 ---@param configuration task_configuration
 ---@return boolean
 function M.DadbodOutputBuilder:validate(configuration)
-  if
-    configuration
-    and configuration.name == self.name
-    and configuration.evaluate == self:mode_name()
-  then
+  if configuration and configuration.name == self.name and configuration.evaluate == self:mode_name() then
     return true
   end
   return false

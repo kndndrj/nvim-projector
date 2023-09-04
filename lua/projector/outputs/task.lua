@@ -135,4 +135,35 @@ function TaskOutput:kill()
   self.state = "inactive"
 end
 
+---@param max_lines integer
+---@return string[]?
+function TaskOutput:preview(max_lines)
+  if self.state ~= "visible" and self.state ~= "hidden" then
+    return
+  end
+  if not self.bufnr then
+    return
+  end
+
+  -- get last max_lines * 3 lines (should be enough for most cases)
+  local lines = vim.api.nvim_buf_get_lines(self.bufnr, -30, -1, false)
+
+  -- get last non blank line
+  local to = 0
+  for i = #lines, 1, -1 do
+    if lines[i] ~= "" then
+      to = i
+      break
+    end
+  end
+
+  local from = to - max_lines
+  if from < 0 then
+    from = 0
+  end
+
+  -- return range of lines
+  return { unpack(lines, from + 1, to + 1) }
+end
+
 return TaskOutput
