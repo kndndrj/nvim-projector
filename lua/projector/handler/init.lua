@@ -3,7 +3,6 @@ local Task = require("projector.task")
 local Lookup = require("projector.handler.lookup")
 
 ---@class Handler
----@field private dashboard Dashboard
 ---@field private lookup Lookup task lookup
 ---@field private loaders Loader[]
 ---@field private output_builders OutputBuilder[]
@@ -15,20 +14,14 @@ local Handler = {}
 
 ---@alias handler_config { depencency_mode: task_mode, automatic_reload: boolean }
 
----@param dashboard Dashboard
 ---@param loaders Loader[]
 ---@param output_builders OutputBuilder[]
 ---@param opts? handler_config
 ---@return Handler
-function Handler:new(dashboard, loaders, output_builders, opts)
+function Handler:new(loaders, output_builders, opts)
   opts = opts or {}
 
-  if not dashboard then
-    error("no Dashboard provided to Handler")
-  end
-
   local o = {
-    dashboard = dashboard,
     tasks = {},
     lookup = Lookup:new(),
     output_builders = output_builders or {},
@@ -147,27 +140,23 @@ function Handler:reload_configs()
   self.lookup:replace_tasks(self:create_tasks(configs))
 end
 
--- entrypoint to task selection
-function Handler:continue()
-  -- evaluate any task overrides
-  if self:evaluate_live_task_action_overrides() then
-    return
-  end
-
+-- reload based on configs or first load
+function Handler:soft_reload()
   if self.automatic_reload or not self.first_load_done then
     self:reload_configs()
     self.first_load_done = true
   end
+end
 
-  -- show dashboard
-  self.dashboard:open(
-    self.lookup:get_all { live = false, suppress_children = true },
-    self.lookup:get_all { live = true },
-    self.loaders,
-    function()
-      self:reload_configs()
-    end
-  )
+---@param filter? { live: boolean, visible: boolean, suppress_children: boolean }
+---@return Task[] tasks
+function Handler:get_tasks(filter)
+  return self.lookup:get_all(filter)
+end
+
+---@return Loader[] loaders
+function Handler:get_loaders()
+  return self.loaders
 end
 
 -- checks all live tasks for actions and triggers overrides if there are any

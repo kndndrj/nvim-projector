@@ -149,9 +149,9 @@ function DapOutput:actions()
   return actions
 end
 
----@param max_lines integer
+---@param _ integer
 ---@return string[]?
-function DapOutput:preview(max_lines)
+function DapOutput:preview(_)
   return { dap.status() }
 end
 

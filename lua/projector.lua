@@ -4,15 +4,17 @@ local utils = require("projector.utils")
 local default_config = require("projector.config").default
 
 local M = {}
-local m = {}
-
----@type Handler
-m.handler = nil
+local m = {
+  ---@type Handler
+  handler = nil,
+  ---@type Dashboard
+  dashboard = nil,
+}
 
 -- Function for checking if setup function has been called
 local warning_displayed = false
 local function check_setup()
-  if not m.handler then
+  if not m.handler or not m.dashboard then
     if not warning_displayed then
       utils.log("warn", '"projector.setup()" has not been called yet!')
       warning_displayed = true
@@ -40,8 +42,8 @@ function M.setup(config)
     outputs = { opts.outputs, "table" },
   }
 
-  local dashboard = Dashboard:new(opts.dashboard)
-  m.handler = Handler:new(dashboard, opts.loaders, opts.outputs, opts.core)
+  m.handler = Handler:new(opts.loaders, opts.outputs, opts.core)
+  m.dashboard = Dashboard:new(m.handler, opts.dashboard)
 end
 
 function M.reload()
@@ -55,7 +57,17 @@ function M.continue()
   if not check_setup() then
     return
   end
-  m.handler:continue()
+
+  -- evaluate any task overrides
+  if m.handler:evaluate_live_task_action_overrides() then
+    return
+  end
+
+  -- reload if necessary
+  m.handler:soft_reload()
+
+  -- open dashboard
+  m.dashboard:open()
 end
 
 function M.next()

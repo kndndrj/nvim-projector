@@ -26,7 +26,8 @@ function M.active_task_nodes(tasks)
 
       local node_action
       if type(action.action) == "function" then
-        node_action = function()
+        node_action = function(close)
+          close()
           action.action()
         end
       end
@@ -66,15 +67,17 @@ function M.active_task_nodes(tasks)
         type = type,
         comment = current_mode,
         -- show
-        action_1 = function()
+        action_1 = function(close)
+          close()
           task:show()
         end,
         -- restart
-        action_2 = function()
+        action_2 = function(close)
+          close()
           task:run { restart = true }
         end,
         -- kill
-        action_3 = function()
+        action_3 = function(_)
           task:kill()
         end,
         preview = previewer,
@@ -132,7 +135,8 @@ function M.inactive_task_nodes(tasks)
         local action
         if #child_nodes < 1 and #modes == 1 then
           -- no children, single mode
-          action = function()
+          action = function(close)
+            close()
             task:run { mode = modes[1] }
           end
         else
@@ -145,7 +149,8 @@ function M.inactive_task_nodes(tasks)
                 id = meta.id .. mode,
                 name = mode,
                 type = "mode",
-                action_1 = function()
+                action_1 = function(close)
+                  close()
                   task:run { mode = mode }
                 end,
                 preview = previewer,
@@ -199,7 +204,8 @@ function M.loader_nodes(loaders, reload_handle)
     local comment
     local previewer
     if type(loader.file) == "function" and vim.loop.fs_stat(loader:file()) then
-      node_action = function()
+      node_action = function(close)
+        close()
         editor.open(loader:file(), {
           title = "Edit source of " .. loader:name(),
           callback = reload_handle,
@@ -231,7 +237,7 @@ function M.loader_nodes(loaders, reload_handle)
     table.insert(
       nodes,
       NuiTree.Node {
-        id = tostring(math.random()),
+        id = loader:name(),
         name = loader:name(),
         type = "loader",
         action_1 = node_action,
@@ -246,10 +252,12 @@ function M.loader_nodes(loaders, reload_handle)
   end
 
   local master_node = NuiTree.Node({
-    id = tostring(math.random()),
+    id = "__loaders_master_node__",
     name = "loaders",
     type = "group",
-    action_2 = reload_handle,
+    action_2 = function(_)
+      reload_handle()
+    end,
   }, nodes)
 
   return { master_node }
@@ -269,7 +277,8 @@ function M.help_no_task_nodes()
       name = "Press here for help",
       comment = ":h projector",
       type = "",
-      action_1 = function()
+      action_1 = function(close)
+        close()
         vim.cmd(":h projector")
       end,
     },
@@ -290,7 +299,8 @@ function M.help_no_loader_nodes()
       name = "Press here for help",
       comment = ":h projector-loaders",
       type = "",
-      action_1 = function()
+      action_1 = function(close)
+        close()
         vim.cmd(":h projector-loaders")
       end,
     },
