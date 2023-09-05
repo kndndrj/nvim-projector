@@ -26,7 +26,13 @@ function TaskOutput:init(configuration, callback)
 
   local command = configuration.command
   if configuration.args then
-    command = command .. ' "' .. table.concat(configuration.args, '" "') .. '"'
+    local args = {}
+    -- escape arg characters
+    for _, arg in ipairs(configuration.args) do
+      local a = arg:gsub('"', [[\"]])
+      table.insert(args, a)
+    end
+    command = command .. ' "' .. table.concat(args, '" "') .. '"'
   end
 
   local term_options = {

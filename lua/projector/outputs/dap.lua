@@ -39,10 +39,6 @@ function DapOutput:init(configuration, callback)
   end
 
   self.session.on_close["projector"] = function()
-    self.state = "inactive"
-    if has_dapui then
-      dapui.close()
-    end
     callback(true)
   end
 end

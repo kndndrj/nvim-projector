@@ -229,7 +229,6 @@ function M.loader_nodes(loaders, reload_handle)
           i = i + 1
         end
         io.close(file)
-        print(#lines)
         return lines
       end
     end

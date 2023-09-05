@@ -367,10 +367,14 @@ function Dashboard:refresh()
     self.left_tree:render()
   end
 
+  local active_task_nodes = convert.active_task_nodes(self.handler:get_tasks { live = true })
+  if #active_task_nodes < 1 then
+    active_task_nodes = convert.separator_nodes(1)
+  end
+
   if self.right_tree then
     local expansion = get_expansion(self.right_tree)
-    local nodes = convert.active_task_nodes(self.handler:get_tasks { live = true })
-    self.right_tree:set_nodes(nodes)
+    self.right_tree:set_nodes(active_task_nodes)
     set_expansion(self.right_tree, expansion)
     self.right_tree:render()
   end
