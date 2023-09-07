@@ -1,4 +1,5 @@
 local MockedTask = require("projector.handler.task_mock")
+local utils = require("projector.utils")
 
 -- Lookup is a "dumb" storage for sources and connections
 -- and their relations
@@ -30,16 +31,17 @@ function Lookup:replace_tasks(tasks)
     return
   end
 
-  -- keep live tasks
-  local keep = {}
-  for id, task in pairs(self.tasks) do
-    if task:is_live() then
-      keep[id] = task
-    end
+  local new_ids = {}
+  for _, task in ipairs(tasks) do
+    table.insert(new_ids, task:metadata().id)
   end
 
-  -- preserve live tasks
-  self.tasks = keep
+  -- remove dead tasks with no matching id
+  for id, task in pairs(self.tasks) do
+    if not task:is_live() and not utils.contains(new_ids, task:metadata().id) then
+      self.tasks[id] = nil
+    end
+  end
 
   -- reset child status
   self.child_lookup = {}
