@@ -2,6 +2,8 @@
 
 <!-- Any html tags, badges etc. go before this tag. -->
 
+**Attention**: refactor in progress on `v3` branch. I'll tag a commit before I merge. Thanks.
+
 <!--docgen-start-->
 
 # Neovim Projector
