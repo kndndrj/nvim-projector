@@ -125,6 +125,8 @@ function Task:update(configuration, children)
     self.last_mode = eval_mode
   end
 
+  self.configuration = configuration
+
   return true
 end
 
