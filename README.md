@@ -5,6 +5,8 @@
 ![Linting Status](https://img.shields.io/github/actions/workflow/status/kndndrj/nvim-projector/lint.yml?label=linting&style=for-the-badge)
 ![Docgen Status](https://img.shields.io/github/actions/workflow/status/kndndrj/nvim-projector/docgen.yml?label=docgen&logo=neovim&logoColor=white&style=for-the-badge)
 
+[!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/yellow_img.png)](https://www.buymeacoffee.com/kndndrj)
+
 <img src="assets/logo.svg" alt="Projector logo" title="Projector" align="right" height="220"/>
 <!-- DOCGEN_IGNORE_END -->
 
