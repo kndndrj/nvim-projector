@@ -17,7 +17,7 @@ function DadbodOutput:status()
   return self.state or "visible"
 end
 
----@param _ task_configuration
+---@param _ TaskConfiguration
 ---@param callback fun(success: boolean)
 function DadbodOutput:init(_, callback)
   -- due to evaluation specification in the

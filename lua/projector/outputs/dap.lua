@@ -19,7 +19,7 @@ function DapOutput:status()
   return self.state or "inactive"
 end
 
----@param configuration task_configuration
+---@param configuration TaskConfiguration
 ---@param callback fun(success: boolean)
 function DapOutput:init(configuration, callback)
   if not has_dap then

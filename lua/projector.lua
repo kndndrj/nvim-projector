@@ -3,7 +3,14 @@ local Dashboard = require("projector.dashboard")
 local utils = require("projector.utils")
 local default_config = require("projector.config").default
 
-local M = {}
+---@toc projector.ref.contents
+
+---@mod projector.ref Projector Reference
+---@brief [[
+---Code runner/project manager for neovim.
+---@brief ]]
+
+local projector = {}
 local m = {
   ---@type Handler
   handler = nil,
@@ -24,11 +31,12 @@ local function check_setup()
   return true
 end
 
--- setup function
----@param config Config
-function M.setup(config)
+---Setup function with optional config parameter.
+---@param cfg? Config
+function projector.setup(cfg)
+  cfg = cfg or {}
   ---@type Config
-  local opts = vim.tbl_deep_extend("force", default_config, config)
+  local opts = vim.tbl_deep_extend("force", default_config, cfg)
 
   -- validate config
   vim.validate {
@@ -46,14 +54,17 @@ function M.setup(config)
   m.dashboard = Dashboard:new(m.handler, opts.dashboard)
 end
 
-function M.reload()
+---Reload configurations.
+function projector.reload()
   if not check_setup() then
     return
   end
   m.handler:reload_configs()
 end
 
-function M.continue()
+---Entrypoint function which triggers task selection, action picker or overrides,
+---depending on the context.
+function projector.continue()
   if not check_setup() then
     return
   end
@@ -70,43 +81,50 @@ function M.continue()
   m.dashboard:open()
 end
 
-function M.next()
+---Cycle next output UI.
+function projector.next()
   if not check_setup() then
     return
   end
   m.handler:next_task()
 end
 
-function M.previous()
+---Cycle previous output UI.
+function projector.previous()
   if not check_setup() then
     return
   end
   m.handler:previous_task()
 end
 
-function M.toggle()
+---Toggle UI.
+function projector.toggle()
   if not check_setup() then
     return
   end
   m.handler:toggle_output()
 end
 
-function M.restart()
+---Restart current task.
+function projector.restart()
   if not check_setup() then
     return
   end
   m.handler:kill_task { restart = true }
 end
 
-function M.kill()
+---Kill current task.
+function projector.kill()
   if not check_setup() then
     return
   end
   m.handler:kill_task { restart = false }
 end
 
+---Status formatted as a string.
+---For statusline use.
 ---@return string
-function M.status()
+function projector.status()
   if not check_setup() then
     return ""
   end
@@ -117,7 +135,4 @@ function M.status()
   return ""
 end
 
--- experimental and subject to change!
-M.api = m
-
-return M
+return projector

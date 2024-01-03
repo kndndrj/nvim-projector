@@ -1,18 +1,30 @@
----@alias mapping {key: string, mode: string}
+local config = {}
 
+---@mod projector.ref.config Projector Configuration
+
+---Configuration object
 ---@class Config
 ---@field dashboard dashboard_config
+---@field core core_config
 ---@field loaders Loader[]
 ---@field outputs OutputBuilder[]
----@field core handler_config
 
-local M = {}
+---Keymap input.
+---@alias mapping { key: string, mode: string }
+
+---Core options.
+---@alias core_config { depencency_mode: task_mode, automatic_reload: boolean }
+
+---Dashboard related options.
+---@alias dashboard_config { mappings: table<string, mapping>, disable_candies: boolean, candies: table<string, Candy>, popup: popup_config }
 
 -- DOCGEN_START
 local task_output_builder = require("projector.outputs").TaskOutputBuilder:new()
 
+---Default config.
+---To see defaults, run :lua= require"projector.config".default
 ---@type Config
-M.default = {
+config.default = {
   core = {
     depencency_mode = task_output_builder:mode_name(),
     automatic_reload = false,
@@ -124,4 +136,4 @@ M.default = {
 }
 -- DOCGEN_END
 
-return M
+return config

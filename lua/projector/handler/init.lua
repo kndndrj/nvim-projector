@@ -12,11 +12,9 @@ local Lookup = require("projector.handler.lookup")
 ---@field private first_load_done boolean were configs loaded for the first time?
 local Handler = {}
 
----@alias handler_config { depencency_mode: task_mode, automatic_reload: boolean }
-
 ---@param loaders Loader[]
 ---@param output_builders OutputBuilder[]
----@param opts? handler_config
+---@param opts? core_config
 ---@return Handler
 function Handler:new(loaders, output_builders, opts)
   opts = opts or {}
@@ -38,7 +36,7 @@ end
 
 -- get preprocessed records from output builders
 ---@private
----@param configs task_configuration[]
+---@param configs TaskConfiguration[]
 function Handler:preprocess(configs)
   for _, builder in ipairs(self.output_builders) do
     if type(builder.preprocess) == "function" then
@@ -50,7 +48,7 @@ end
 
 -- create tasks from records
 ---@private
----@param cfgs task_configuration[]
+---@param cfgs TaskConfiguration[]
 ---@return Task[]
 function Handler:create_tasks(cfgs)
   if not cfgs then
@@ -111,7 +109,7 @@ end
 -- Load tasks from all loaders
 -- and adds them to internal lookup
 function Handler:reload_configs()
-  ---@param cfgs? task_configuration[]
+  ---@param cfgs? TaskConfiguration[]
   ---@param loader Loader
   local function set_loader(cfgs, loader)
     if not cfgs then
@@ -123,7 +121,7 @@ function Handler:reload_configs()
     end
   end
 
-  ---@type task_configuration[]
+  ---@type TaskConfiguration[]
   local configs = {}
 
   -- Load all tasks from different loaders

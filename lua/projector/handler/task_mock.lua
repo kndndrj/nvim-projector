@@ -14,7 +14,7 @@ function MockedTask:new()
 end
 
 -- updates task's config
----@param configuration task_configuration
+---@param configuration TaskConfiguration
 function MockedTask:update_config(configuration)
   local _ = configuration
 end
@@ -34,7 +34,7 @@ function MockedTask:metadata()
   }
 end
 
----@return task_configuration
+---@return TaskConfiguration
 function MockedTask:config()
   return {}
 end

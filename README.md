@@ -16,7 +16,11 @@ Extensible code-runner/project-configurator.
 
 **Manage Tasks, Databases, Tests and Debug Configurations in One Place!**
 
+<!-- DOCGEN_IGNORE_START -->
+
 ![Showcase](./assets/showcase.gif)
+
+<!-- DOCGEN_IGNORE_END -->
 
 ## Overview
 
@@ -172,7 +176,8 @@ that, the meaning of fields is determined by the `outputs`.
 For example: `dadbod` output doesn't care about `command`, `port` or `env`
 fields, but `dap` output does. This means that a configuration object with just
 the forementioned fields can be ran in `dap` output mode, but not in `dadbod`
-output mode.
+output mode (additional ref with `:h projector.ref.task`).
+
 
 ```lua
 {
@@ -203,7 +208,7 @@ which sources to use using the setup function:
 require("projector").setup {
   loaders = {
     require("projector.loaders").BuiltinLoader:new()
-    require("projector.loaders").DapLoader:new(),
+    require("projector.loaders").DapLoader:new( ),
     -- ...
   },
 }
@@ -216,15 +221,7 @@ There are a few loaders that are built-in:
   in lua config.
 - `DapLoader` - loads `dap.configurations`
 
-If you want to create your own loader, just follow this interface:
-
-```lua
----@class Loader
----@field name fun(self: Loader):string function to return the output's name
----@field load fun(self: Loader):task_configuration[]? function that provides task configurations from the source
----@field expand? fun(self: Loader, config: task_configuration):task_configuration function that expands config's variables
----@field file? fun(self: Loader):string function that provides the source file name
-```
+If you want to create your own loader, implement the Loader interface (`:h projector.ref.loaders`).
 
 ### Outputs and Output Builders
 
@@ -250,23 +247,7 @@ You can pick form a few built-ins...
 - `DadbodOutputBuilder` picks `database` and `query` fields from all loaded
   configs and provieds a single task that opens `vim-dadbod-ui`
 
-Or you can choose to implement your own:
-
-```lua
----@class Output
----@field status fun(self: Output):output_status function to return the output's status
----@field init fun(self: Output, configuration: task_configuration, callback: fun(success: boolean)) function to initialize the output (runs, but doesn't show anythin on screen)
----@field kill fun(self: Output) function to kill the output execution
----@field show fun(self: Output) function to show the ouput on screen
----@field hide fun(self: Output) function to hide the output off the screen
----@field actions? fun(self: Output):task_action[] function to list any available actions of the output
-
----@class OutputBuilder
----@field mode_name fun(self: OutputBuilder):task_mode function to return the name of the output mode (used as a display mode name)
----@field build fun(self: OutputBuilder):Output function to build the actual output
----@field validate fun(self: OutputBuilder, configuration: task_configuration):boolean true if output can run the configuration, false otherwise
----@field preprocess? fun(self: OutputBuilder, configurations: task_configuration[]):task_configuration[]? manufacture new configurations based on the ones passed in (don't return duplicates)
-```
+Or you can choose to implement your own (`:h projector.ref.outputs`)
 
 ### Extensions
 
@@ -278,5 +259,5 @@ loaders:
   `tasks.json` loaders.
 - [intellij](https://github.com/kndndrj/projector-idea) `.idea` workspace folder
   loader.
-- [dbee](https://github.com/kndndrj/nvim-dbee) - provides a `DadbodOutput`
+- [dbee](https://github.com/kndndrj/projector-dbee) - provides a `DadbodOutput`
   replacement.

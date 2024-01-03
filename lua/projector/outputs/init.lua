@@ -6,23 +6,6 @@ local DapOutput = require("projector.outputs.dap")
 
 local M = {}
 
----@alias output_status "inactive"|"hidden"|"visible"|""
-
----@class Output
----@field status fun(self: Output):output_status function to return the output's status
----@field init fun(self: Output, configuration: task_configuration, callback: fun(success: boolean)) function to initialize the output (runs, but doesn't show anythin on screen)
----@field kill fun(self: Output) function to kill the output execution
----@field show fun(self: Output) function to show the ouput on screen
----@field hide fun(self: Output) function to hide the output off the screen
----@field actions? fun(self: Output):task_action[] function to list any available actions of the output
----@field preview? fun(self: Output, max_lines: integer):string[]? function to return a preview of output (to show in the dashboard) - max_lines indicates how many lines to show
-
----@class OutputBuilder
----@field mode_name fun(self: OutputBuilder):task_mode function to return the name of the output mode (used as a display mode name)
----@field build fun(self: OutputBuilder):Output function to build the actual output
----@field validate fun(self: OutputBuilder, configuration: task_configuration):boolean true if output can run the configuration, false otherwise
----@field preprocess? fun(self: OutputBuilder, configurations: task_configuration[]):task_configuration[]? manufacture new configurations based on the ones passed in (don't return duplicates)
-
 --
 -- Builder for the TaskOutput
 --
@@ -49,7 +32,7 @@ function M.TaskOutputBuilder:mode_name()
   return "task"
 end
 
----@param configuration task_configuration
+---@param configuration TaskConfiguration
 ---@return boolean
 function M.TaskOutputBuilder:validate(configuration)
   if configuration and configuration.command then
@@ -87,7 +70,7 @@ function M.DadbodOutputBuilder:mode_name()
   return "dadbod"
 end
 
----@param configuration task_configuration
+---@param configuration TaskConfiguration
 ---@return boolean
 function M.DadbodOutputBuilder:validate(configuration)
   if configuration and configuration.name == self.name and configuration.evaluate == self:mode_name() then
@@ -96,14 +79,14 @@ function M.DadbodOutputBuilder:validate(configuration)
   return false
 end
 
----@param configurations task_configuration[]
----@return task_configuration[]
+---@param configurations TaskConfiguration[]
+---@return TaskConfiguration[]
 function M.DadbodOutputBuilder:preprocess(configurations)
   -- get databases and queries from all configs
   local databases = {} -- only supports list
   local queries = {} -- table of dadbod-ui structured table helpers
 
-  ---@param cfgs task_configuration[]
+  ---@param cfgs TaskConfiguration[]
   local function parse(cfgs)
     for _, c in ipairs(cfgs) do
       if vim.tbl_islist(c.databases) then
@@ -161,7 +144,7 @@ function M.DapOutputBuilder:mode_name()
   return "debug"
 end
 
----@param configuration task_configuration
+---@param configuration TaskConfiguration
 ---@return boolean
 function M.DapOutputBuilder:validate(configuration)
   if configuration and configuration.type and configuration.request then

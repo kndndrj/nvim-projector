@@ -14,14 +14,14 @@ function DapLoader:name()
   return "dap"
 end
 
----@return task_configuration[]?
+---@return TaskConfiguration[]?
 function DapLoader:load()
   local has_dap, dap = pcall(require, "dap")
   if not has_dap then
     return
   end
 
-  ---@type task_configuration[]
+  ---@type TaskConfiguration[]
   local configurations = {}
 
   for _, configs in pairs(dap.configurations) do

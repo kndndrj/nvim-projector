@@ -10,8 +10,6 @@ local NuiLine = require("nui.line")
 ---@field icon_highlight string
 ---@field text_highlight string
 
----@alias dashboard_config { mappings: table<string, mapping>, disable_candies: boolean, candies: table<string, Candy>, popup: popup_config }
-
 ---@class Node
 ---@field id string
 ---@field name string

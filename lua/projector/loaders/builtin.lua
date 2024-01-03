@@ -3,10 +3,10 @@ local utils = require("projector.utils")
 
 ---@class BuiltinLoader: Loader
 ---@field private get_path fun():string function that returns a path to projector.json file
----@field private get_configs fun():task_configuration[] function that provides extra configs passed to new() method
+---@field private get_configs fun():TaskConfiguration[] function that provides extra configs passed to new() method
 local BuiltinLoader = {}
 
----@param opts? { path: string|fun():(string), configs: task_configuration[]|fun():(task_configuration[]) }
+---@param opts? { path: string|fun():(string), configs: TaskConfiguration[]|fun():(TaskConfiguration[]) }
 ---@return BuiltinLoader
 function BuiltinLoader:new(opts)
   opts = opts or {}
@@ -55,9 +55,9 @@ function BuiltinLoader:name()
   return name
 end
 
----@return task_configuration[]?
+---@return TaskConfiguration[]?
 function BuiltinLoader:load()
-  ---@type task_configuration[]
+  ---@type TaskConfiguration[]
   local cfgs = {}
 
   -- parse json file
@@ -85,8 +85,8 @@ function BuiltinLoader:load()
   return cfgs
 end
 
----@param configuration task_configuration
----@return task_configuration
+---@param configuration TaskConfiguration
+---@return TaskConfiguration
 function BuiltinLoader:expand(configuration)
   return vim.tbl_map(common.expand_config_variables, configuration)
 end

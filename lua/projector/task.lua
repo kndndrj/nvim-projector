@@ -1,30 +1,9 @@
 local utils = require("projector.utils")
 
--- Id of the task
----@alias task_id string
-
--- Table of configuration parameters
----@class task_configuration
----@field id string
----@field name string
----@field dependencies task_id[]
----@field after task_id
----@field evaluate task_mode -- evaluate the specified output immediately if any mode matches the specified one
----@field children task_configuration[] -- group multiple configurations together
-
--- Table of actions
----@alias task_action { label: string, action: fun( ), override?: boolean, nested?: task_action[] }
-
--- What modes can the task run in
----@alias task_mode string
-
--- Metadata of a task
----@alias task_meta { id: string, name: string }
-
 ---@class Task
 ---@field private children Task[]
 ---@field private meta task_meta
----@field private configuration task_configuration Configuration of the task (command, args, env, cwd...)
+---@field private configuration TaskConfiguration Configuration of the task (command, args, env, cwd...)
 ---@field private modes_list task_mode[] What can the task do (debug, task)
 ---@field private last_mode task_mode Mode that was selected previously
 ---@field private dependency_mode task_mode mode to run the dependencies in
@@ -32,15 +11,15 @@ local utils = require("projector.utils")
 ---@field private after? Task a task to run after this one is finished
 ---@field private output_builders table<task_mode, OutputBuilder> task builders per mode
 ---@field private output Output currently active output
----@field private expand_config_variables fun(configuration: task_configuration):task_configuration Function that gets assigned to a task by a loader
+---@field private expand_config_variables fun(configuration: TaskConfiguration):TaskConfiguration Function that gets assigned to a task by a loader
 ---@field private on_run fun(as_dependency: boolean):boolean hook to trigger before running the task. as_dependency is true if the task is ran as a dependency. returns true if the task can show it's output
 ---@field private on_show fun() hook to trigger before showing task's output on screen
 local Task = {}
 
----@param configuration task_configuration
+---@param configuration TaskConfiguration
 ---@param children? Task[] list of child tasks
 ---@param output_builders OutputBuilder[] map of available output builders
----@param opts? { dependency_mode: task_mode, on_run: fun(as_dependency: boolean):(boolean), on_show: fun(), expand_config: fun(config: task_configuration):task_configuration }
+---@param opts? { dependency_mode: task_mode, on_run: fun(as_dependency: boolean):(boolean), on_show: fun(), expand_config: fun(config: TaskConfiguration):TaskConfiguration }
 ---@return Task?
 function Task:new(configuration, children, output_builders, opts)
   if not configuration then
@@ -88,7 +67,7 @@ function Task:new(configuration, children, output_builders, opts)
 end
 
 -- updates task's config and parameters
----@param configuration task_configuration
+---@param configuration TaskConfiguration
 ---@param children? Task[]
 ---@return boolean ok
 function Task:update(configuration, children)
@@ -217,7 +196,7 @@ function Task:metadata()
   return self.meta
 end
 
----@return task_configuration
+---@return TaskConfiguration
 function Task:config()
   return self.configuration
 end

@@ -19,7 +19,7 @@ function TaskOutput:status()
   return self.state or "inactive"
 end
 
----@param configuration task_configuration
+---@param configuration TaskConfiguration
 ---@param callback fun(success: boolean)
 function TaskOutput:init(configuration, callback)
   self.name = configuration.name or "Builtin"

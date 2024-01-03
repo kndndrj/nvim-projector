@@ -55,3 +55,23 @@ jobs:
           author_email: actions@github.com
           message: "[docgen] Update doc/projector.txt"
           pull: --rebase --autostash
+
+  reference-docs:
+    name: Generate Reference Docs
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+      - name: Generating help
+        shell: bash
+        run: |
+          curl -Lq https://github.com/numToStr/lemmy-help/releases/latest/download/lemmy-help-x86_64-unknown-linux-gnu.tar.gz | tar xz
+          ./lemmy-help lua/projector.lua lua/projector/{config,doc,loaders/init,outputs/doc}.lua --expand-opt > doc/projector-reference.txt
+      - name: Commit the Generated Docs
+        uses: EndBug/add-and-commit@v9
+        if: github.event_name == 'push'
+        with:
+          add: doc/projector-reference.txt
+          author_name: Github Actions
+          author_email: actions@github.com
+          message: "[docgen] Update doc/projector-reference.txt"
+          pull: --rebase --autostash
