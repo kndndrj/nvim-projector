@@ -18,7 +18,7 @@ Extensible code-runner/project-configurator.
 
 <!-- DOCGEN_IGNORE_START -->
 
-![Showcase](./assets/showcase.gif)
+![Screenshot](assets/screenshot.jpg)
 
 <!-- DOCGEN_IGNORE_END -->
 
@@ -178,7 +178,6 @@ fields, but `dap` output does. This means that a configuration object with just
 the forementioned fields can be ran in `dap` output mode, but not in `dadbod`
 output mode (additional ref with `:h projector.ref.task`).
 
-
 ```lua
 {
   -- These have special "global" meaning:
@@ -221,7 +220,8 @@ There are a few loaders that are built-in:
   in lua config.
 - `DapLoader` - loads `dap.configurations`
 
-If you want to create your own loader, implement the Loader interface (`:h projector.ref.loaders`).
+If you want to create your own loader, implement the Loader interface
+(`:h projector.ref.loaders`).
 
 ### Outputs and Output Builders
 
