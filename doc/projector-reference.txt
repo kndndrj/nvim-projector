@@ -1,0 +1,214 @@
+==============================================================================
+Table of Contents                                       *projector.ref.contents*
+
+Projector Reference ············································ |projector.ref|
+Projector Configuration ································· |projector.ref.config|
+Task Type ················································· |projector.ref.task|
+Loaders ················································ |projector.ref.loaders|
+Outputs ················································ |projector.ref.outputs|
+
+==============================================================================
+Projector Reference                                              *projector.ref*
+
+Code runner/project manager for neovim.
+
+projector.setup({cfg?})                                        *projector.setup*
+    Setup function with optional config parameter.
+
+    Parameters: ~
+        {cfg}  (nil|Config)
+
+
+projector.reload()                                            *projector.reload*
+    Reload configurations.
+
+
+projector.continue()                                        *projector.continue*
+    Entrypoint function which triggers task selection, action picker or overrides,
+    depending on the context.
+
+
+projector.next()                                                *projector.next*
+    Cycle next output UI.
+
+
+projector.previous()                                        *projector.previous*
+    Cycle previous output UI.
+
+
+projector.toggle()                                            *projector.toggle*
+    Toggle UI.
+
+
+projector.restart()                                          *projector.restart*
+    Restart current task.
+
+
+projector.kill()                                                *projector.kill*
+    Kill current task.
+
+
+projector.status()                                            *projector.status*
+    Status formatted as a string.
+    For statusline use.
+
+    Returns: ~
+        (string)
+
+
+==============================================================================
+Projector Configuration                                   *projector.ref.config*
+
+Config                                                                  *Config*
+    Configuration object
+
+    Fields: ~
+        {dashboard}  (dashboard_config)
+        {core}       (core_config)
+        {loaders}    (Loader[])
+        {outputs}    (OutputBuilder[])
+
+
+mapping                                                                *mapping*
+    Keymap input.
+
+    Type: ~
+        {key:string,mode:string}
+
+
+core_config                                                        *core_config*
+    Core options.
+
+    Type: ~
+        {depencency_mode:task_mode,automatic_reload:boolean}
+
+
+dashboard_config                                              *dashboard_config*
+    Dashboard related options.
+
+    Type: ~
+        {mappings:table<string,mapping>,disable_candies:boolean,candies:table<string,Candy>,popup:popup_config}
+
+
+config.default                                                  *config.default*
+    Default config.
+    To see defaults, run :lua= require"projector.config".default
+
+    Type: ~
+        (Config)
+
+
+==============================================================================
+Task Type                                                   *projector.ref.task*
+
+Overview of task configuration object used in projector.
+
+task_id                                                                *task_id*
+    ID of the task.
+
+    Type: ~
+        string
+
+
+task_action                                                        *task_action*
+    Table of actions.
+    Label is displayed in the menu,
+    action is an action which is triggered on call,
+    override triggers this action automatically instead of displaying the menu and
+    nested is a list of optional nested actions.
+
+    Type: ~
+        {label:string,action:fun(),override?:boolean,nested?:task_action[]}
+
+
+task_mode                                                            *task_mode*
+
+    Type: ~
+        string
+
+
+task_meta                                                            *task_meta*
+    Metadata of a task.
+
+    Type: ~
+        {id:string,name:string}
+
+
+TaskConfiguration                                            *TaskConfiguration*
+    Task configuration is a table of any key value pairs.
+    Fields listed here have a special meaning in projector-core,
+    but the main functionality of the task is defined by the outputs
+    (see |OutputBuilder| and |Output|).
+
+    Fields: ~
+        {id}            (string)               id of the task (doesn't need to be defined, but it's useful for specifying dependencies)
+        {name}          (string)               display name of the task
+        {dependencies}  (task_id[])            task ids to run before running this one
+        {after}         (task_id)              task id to run after finishing this task
+        {evaluate}      (task_mode)            evaluate the specified output immediately if any mode matches the specified one
+        {children}      (TaskConfiguration[])  group multiple configurations together
+
+
+==============================================================================
+Loaders                                                  *projector.ref.loaders*
+
+Loaders load tasks (see |TaskConfiguration|) from various sources - it can
+be a json file or an encrypted yaml file.
+
+To create a new loader one has to implement the Loader iterface and pass it with
+config to setup function.
+
+Loader                                                                  *Loader*
+    Loader interface.
+
+    Fields: ~
+        {name}    (fun(self:Loader):string)                                          function to return the output's name
+        {load}    (fun(self:Loader):TaskConfiguration[])                             function that provides task configurations from the source
+        {expand}  (nil|fun(self:Loader,config:TaskConfiguration):TaskConfiguration)  function that expands config's variables
+        {file}    (nil|fun(self:Loader):string)                                      function that provides the source file name
+
+
+==============================================================================
+Outputs                                                  *projector.ref.outputs*
+
+An output represents a single running instance of a task.
+
+To create a new output one has to implement the Output iterface that
+can run an arbitrary task configuration object and then implement
+the OutputBuilder interface, which builds those outputs on demand.
+
+To use the outputs, pass the OutputBuilder with config to setup function.
+
+output_status                                                    *output_status*
+    Status of the output.
+
+    Variants: ~
+        ("inactive")
+        ("hidden")
+        ("visible")
+
+
+Output                                                                  *Output*
+    Output interface.
+
+    Fields: ~
+        {status}   (fun(self:Output):output_status)                                                  function to return the output's status
+        {init}     (fun(self:Output,configuration:TaskConfiguration,callback:fun(success:boolean)))  function to initialize the output (runs, but doesn't show anythin on screen)
+        {kill}     (fun(self:Output))                                                                function to kill the output execution
+        {show}     (fun(self:Output))                                                                function to show the ouput on screen
+        {hide}     (fun(self:Output))                                                                function to hide the output off the screen
+        {actions}  (nil|fun(self:Output):task_action[])                                              function to list any available actions of the output
+        {preview}  (nil|fun(self:Output,max_lines:integer):string[])
+
+
+OutputBuilder                                                    *OutputBuilder*
+    Output Builder interface.
+
+    Fields: ~
+        {mode_name}   (fun(self:OutputBuilder):task_mode)                                                   function to return the name of the output mode (used as a display mode name)
+        {build}       (fun(self:OutputBuilder):Output)                                                      function to build the actual output
+        {validate}    (fun(self:OutputBuilder,configuration:TaskConfiguration):boolean)                     true if output can run the configuration, false otherwise
+        {preprocess}  (nil|fun(self:OutputBuilder,configurations:TaskConfiguration[]):TaskConfiguration[])
+
+
+vim:tw=78:ts=8:noet:ft=help:norl:
