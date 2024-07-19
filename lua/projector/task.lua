@@ -179,10 +179,11 @@ function Task:run(opts)
     callback(ok)
   end
 
-  -- build the output and run the task
-  if mode ~= self.last_mode or not self.output then
-    self.output = self.output_builders[mode]:build()
+  -- close the old output, build a new one and run the task
+  if self.output and type(self.output.close) == "function" then
+    self.output:close()
   end
+  self.output = self.output_builders[mode]:build()
   self.output:init(self.expand_config_variables(self.configuration), cb)
 
   -- show the output
