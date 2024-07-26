@@ -24,6 +24,7 @@
 ---@field hide fun(self: Output) function to hide the output off the screen
 ---@field actions? fun(self: Output):task_action[] function to list any available actions of the output
 ---@field preview? fun(self: Output, max_lines: integer):string[]? function to return a preview of output (to show in the dashboard) - max_lines indicates how many lines to show
+---@field close? fun(self: Output) optional cleanup function that gets called when the task changes the current output for a different one (for example on restart)
 
 ---Output Builder interface.
 ---@class OutputBuilder

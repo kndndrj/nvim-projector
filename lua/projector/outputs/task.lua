@@ -1,9 +1,10 @@
 ---@class TaskOutput: Output
----@field private name string
----@field private bufnr integer
----@field private winid integer
----@field private state output_status
----@field private job_id integer
+---@field private name? string
+---@field private bufnr? integer
+---@field private winid? integer
+---@field private job_id? integer
+---@field private died? boolean did task already die?
+---@field private killed_manually? boolean was task killed by using the :kill method?
 local TaskOutput = {}
 
 ---@return TaskOutput
@@ -16,7 +17,22 @@ end
 
 ---@return output_status
 function TaskOutput:status()
-  return self.state or "inactive"
+  if self.died then
+    return "inactive"
+  end
+
+  local alive = (self.job_id ~= nil and vim.fn.jobwait({ self.job_id }, 0)[1] == -1)
+
+  if not alive then
+    self.died = true
+    return "inactive"
+  elseif self.winid and vim.api.nvim_win_is_valid(self.winid) then
+    return "visible"
+  elseif self.bufnr and vim.api.nvim_buf_is_valid(self.bufnr) then
+    return "hidden"
+  end
+
+  return "inactive"
 end
 
 ---@param configuration TaskConfiguration
@@ -40,6 +56,11 @@ function TaskOutput:init(configuration, callback)
     env = configuration.env,
     cwd = configuration.cwd,
     on_exit = function(_, code)
+      if self.killed_manually then
+        -- close the window and delete the buffer (only if killed usink key combination)
+        self:close()
+      end
+
       callback(code == 0)
     end,
   }
@@ -69,30 +90,19 @@ function TaskOutput:init(configuration, callback)
   -- close the dummy window
   vim.api.nvim_win_close(winid, true)
 
-  self.state = "hidden"
-
   -- Autocommands
-  -- Deactivate the output if we delete the buffer
-  vim.api.nvim_create_autocmd({ "BufDelete", "BufUnload" }, {
-    buffer = self.bufnr,
-    callback = function()
-      self.bufnr = nil
-      self.state = "inactive"
-    end,
-  })
   -- If we close the window, the output is hidden
   vim.api.nvim_create_autocmd({ "WinClosed" }, {
     buffer = self.bufnr,
     callback = function()
       self.winid = nil
-      self.state = "hidden"
     end,
   })
   -- switch back to our buffer when trying to open a different buffer in this window
   vim.api.nvim_create_autocmd({ "BufWinEnter", "BufWinLeave", "BufReadPost", "BufNewFile" }, {
     callback = function(arg)
       -- delete autocmd if output is dead
-      if not self.bufnr or self.state == "inactive" then
+      if (not self.bufnr or not vim.api.nvim_buf_is_valid(self.bufnr)) or self:status() == "inactive" then
         return true
       end
 
@@ -106,8 +116,7 @@ end
 
 function TaskOutput:show()
   -- Open a new window and open the buffer in it
-  if not self.bufnr then
-    self.state = "inactive"
+  if not self.bufnr or not vim.api.nvim_buf_is_valid(self.bufnr) then
     return
   end
 
@@ -117,37 +126,55 @@ function TaskOutput:show()
 
   -- set winbar
   vim.api.nvim_win_set_option(self.winid, "winbar", self.name)
-
-  self.state = "visible"
 end
 
 function TaskOutput:hide()
   pcall(vim.api.nvim_win_close, self.winid, true)
-  self.winid = nil
+end
 
-  self.state = "hidden"
+---@param winid integer
+local function kill_terminal(winid)
+  if not winid or not vim.api.nvim_win_is_valid(winid) then
+    return
+  end
+
+  -- switch to provided window and kill it
+  vim.api.nvim_set_current_win(winid)
+
+  -- enter insert mode and send ctrl+c and escape (insert-mode, kill-process, normal-mode)
+  local escaped = vim.api.nvim_replace_termcodes("i<C-c>", true, false, true)
+  vim.api.nvim_feedkeys(escaped, "m", false)
 end
 
 function TaskOutput:kill()
-  -- kill the task
-  if self.job_id then
-    vim.fn.jobstop(self.job_id)
+  local status = self:status()
+  if status == "inactive" then
+    return
   end
 
-  -- close the window and delete the buffer
+  -- show window on screen if it's not there
+  if status == "hidden" then
+    self:show()
+  end
+
+  self.killed_manually = true
+  -- kill the process
+  kill_terminal(self.winid)
+end
+
+function TaskOutput:close()
   pcall(vim.api.nvim_win_close, self.winid, true)
   pcall(vim.api.nvim_buf_delete, self.bufnr, { force = true })
-
-  self.state = "inactive"
 end
 
 ---@param max_lines integer
 ---@return string[]?
 function TaskOutput:preview(max_lines)
-  if self.state ~= "visible" and self.state ~= "hidden" then
+  local status = self:status()
+  if status ~= "visible" and status ~= "hidden" then
     return
   end
-  if not self.bufnr then
+  if not self.bufnr or not vim.api.nvim_buf_is_valid(self.bufnr) then
     return
   end
 
